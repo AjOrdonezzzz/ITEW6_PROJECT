@@ -285,9 +285,9 @@ export default {
 }
 
 .login-btn:hover:not(:disabled) {
-    background: linear-gradient(135deg, #9d6b1f 0%, #7a5016 100%);
+    background: linear-gradient(135deg, #b97817 0%, #6b440c 100%);
     transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(178, 119, 34, 0.3);
+    box-shadow: 0 5px 15px rgba(151, 99, 26, 0.3);
 }
 
 .login-btn:disabled {
