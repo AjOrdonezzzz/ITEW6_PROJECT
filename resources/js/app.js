@@ -6,6 +6,7 @@ import DashboardPage from './pages/DashboardPage.vue';
 import RegisterPage from './pages/RegisterPage.vue';
 import StudentsPage from './pages/StudentsPage.vue';
 import ViolationsPage from './pages/ViolationsPage.vue';
+import EventsPage from './pages/EventsPage.vue';
 
 const routes = [
     {
@@ -32,6 +33,11 @@ const routes = [
         path: '/violations',
         name: 'Violations',
         component: ViolationsPage
+    },
+    {
+        path: '/events',
+        name: 'Events',
+        component: EventsPage
     }
 ];
 
