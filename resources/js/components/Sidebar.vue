@@ -47,7 +47,7 @@ export default {
             menuItems: [
                 { id: 1, label: 'Dashboard', icon: '📊', route: '/dashboard' },
                 { id: 2, label: 'Students', icon: '👥', route: '/students' },
-                { id: 3, label: 'Violations', icon: '⚠️', route: null },
+                { id: 3, label: 'Violations', icon: '⚠️', route: '/violations' },
                 { id: 4, label: 'Events', icon: '📅', route: null },
                 { id: 5, label: 'Reports', icon: '📋', route: null },
                 { id: 6, label: 'Settings', icon: '⚙️', route: null }

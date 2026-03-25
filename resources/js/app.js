@@ -5,6 +5,7 @@ import LoginPage from './pages/LoginPage.vue';
 import DashboardPage from './pages/DashboardPage.vue';
 import RegisterPage from './pages/RegisterPage.vue';
 import StudentsPage from './pages/StudentsPage.vue';
+import ViolationsPage from './pages/ViolationsPage.vue';
 
 const routes = [
     {
@@ -26,6 +27,11 @@ const routes = [
         path: '/students',
         name: 'Students',
         component: StudentsPage
+    },
+    {
+        path: '/violations',
+        name: 'Violations',
+        component: ViolationsPage
     }
 ];
 
