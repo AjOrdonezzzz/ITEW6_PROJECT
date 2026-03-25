@@ -146,10 +146,10 @@ export default {
                     }));
 
                     this.form.password = '';
-                    
+
                     setTimeout(() => {
-                        this.message.show = false;
-                    }, 3000);
+                        this.$router.push('/dashboard');
+                    }, 800);
                 } else {
                     this.message = {
                         text: 'Invalid username or password.',
