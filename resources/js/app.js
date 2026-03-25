@@ -3,12 +3,18 @@ import { createApp } from 'vue';
 import { createRouter, createWebHistory } from 'vue-router';
 import LoginPage from './pages/LoginPage.vue';
 import DashboardPage from './pages/DashboardPage.vue';
+import RegisterPage from './pages/RegisterPage.vue';
 
 const routes = [
     {
         path: '/',
         name: 'Login',
         component: LoginPage
+    },
+    {
+        path: '/register',
+        name: 'Register',
+        component: RegisterPage
     },
     {
         path: '/dashboard',
@@ -28,6 +34,3 @@ const app = createApp({
 
 app.use(router);
 app.mount('#app');
-
-this.$router.push('/dashboard'); // Go to dashboard
-this.$router.push('/'); // Go to login
