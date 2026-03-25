@@ -49,7 +49,7 @@ export default {
                 { id: 2, label: 'Students', icon: '👥', route: '/students' },
                 { id: 3, label: 'Violations', icon: '⚠️', route: '/violations' },
                 { id: 4, label: 'Events', icon: '📅', route: '/events' },
-                { id: 5, label: 'Reports', icon: '📋', route: null },
+                { id: 5, label: 'Reports', icon: '📋', route: '/reports' },
                 { id: 6, label: 'Settings', icon: '⚙️', route: null }
             ]
         };
