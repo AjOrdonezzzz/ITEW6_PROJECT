@@ -10,12 +10,18 @@
         </div>
 
         <nav class="sidebar-nav">
-            <div class="nav-item" v-for="item in menuItems" :key="item.id" @click="selectItem(item)">
+            <component
+                v-for="item in menuItems"
+                :key="item.id"
+                :is="item.route ? 'router-link' : 'div'"
+                v-bind="item.route ? { to: item.route } : {}"
+                class="nav-item"
+                :class="{ active: item.route && $route.path === item.route }"
+            >
                 <span class="nav-icon">{{ item.icon }}</span>
                 <span class="nav-label" v-show="isOpen">{{ item.label }}</span>
-                <!-- Tooltip when collapsed -->
                 <div class="tooltip" v-show="!isOpen">{{ item.label }}</div>
-            </div>
+            </component>
         </nav>
 
         <div class="sidebar-footer">
@@ -39,19 +45,16 @@ export default {
     data() {
         return {
             menuItems: [
-                { id: 1, label: 'Dashboard', icon: '📊' },
-                { id: 2, label: 'Students', icon: '👥' },
-                { id: 3, label: 'Violations', icon: '⚠️' },
-                { id: 4, label: 'Events', icon: '📅' },
-                { id: 5, label: 'Reports', icon: '📋' },
-                { id: 6, label: 'Settings', icon: '⚙️' }
+                { id: 1, label: 'Dashboard', icon: '📊', route: '/dashboard' },
+                { id: 2, label: 'Students', icon: '👥', route: '/students' },
+                { id: 3, label: 'Violations', icon: '⚠️', route: null },
+                { id: 4, label: 'Events', icon: '📅', route: null },
+                { id: 5, label: 'Reports', icon: '📋', route: null },
+                { id: 6, label: 'Settings', icon: '⚙️', route: null }
             ]
         };
     },
     methods: {
-        selectItem(item) {
-            console.log('Selected:', item.label);
-        },
         handleLogout() {
             localStorage.removeItem('user');
             this.$router.push('/');
@@ -74,7 +77,6 @@ export default {
     overflow: hidden;
 }
 
-/* Collapsed State */
 .sidebar.collapsed {
     width: 70px;
 }
@@ -115,7 +117,6 @@ export default {
     background: rgba(255, 255, 255, 0.2);
 }
 
-/* Nav Items */
 .sidebar-nav {
     flex: 1;
     display: flex;
@@ -136,10 +137,12 @@ export default {
     font-size: 15px;
     font-weight: 500;
     white-space: nowrap;
+    text-decoration: none;
 }
 
-.nav-item:hover {
-    background: rgba(255, 255, 255, 0.1);
+.nav-item:hover,
+.nav-item.active {
+    background: rgba(255, 255, 255, 0.12);
     color: white;
 }
 
@@ -155,7 +158,6 @@ export default {
     transition: opacity 0.2s ease;
 }
 
-/* Tooltip on hover when collapsed */
 .tooltip {
     position: absolute;
     left: 65px;
@@ -175,7 +177,6 @@ export default {
     opacity: 1;
 }
 
-/* Footer */
 .sidebar-footer {
     padding-top: 20px;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
@@ -210,7 +211,6 @@ export default {
     flex-shrink: 0;
 }
 
-/* Mobile */
 @media (max-width: 768px) {
     .sidebar {
         position: fixed;
