@@ -72,7 +72,10 @@ export default {
     display: flex;
     flex-direction: column;
     transition: width 0.3s ease;
-    position: relative;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    flex-shrink: 0;
     border-right: 1px solid rgba(255, 255, 255, 0.1);
     overflow: hidden;
 }
