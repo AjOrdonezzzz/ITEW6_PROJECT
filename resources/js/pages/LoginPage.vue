@@ -43,6 +43,11 @@
                         {{ isLoading ? 'Logging in...' : 'Log in' }}
                     </button>
 
+                    <p class="register-prompt">
+                        Don't have an account?
+                        <router-link to="/register" class="register-link">Register</router-link>
+                    </p>
+
                     <div 
                         v-if="message.text" 
                         :class="['message', message.type, { hidden: !message.show }]"
@@ -122,8 +127,13 @@ export default {
             setTimeout(() => {
                 const username = this.form.username.trim();
                 const password = this.form.password;
+                const registeredUser = JSON.parse(localStorage.getItem('registeredUser') || 'null');
+                const isDemoUser = this.validUsers[username] && this.validUsers[username] === password;
+                const isRegisteredUser = registeredUser
+                    && registeredUser.username === username
+                    && registeredUser.password === password;
 
-                if (this.validUsers[username] && this.validUsers[username] === password) {
+                if (isDemoUser || isRegisteredUser) {
                     this.message = {
                         text: `Welcome back, ${username}! 🎉`,
                         type: 'success',
@@ -136,10 +146,10 @@ export default {
                     }));
 
                     this.form.password = '';
-                    
+
                     setTimeout(() => {
-                        this.message.show = false;
-                    }, 3000);
+                        this.$router.push('/dashboard');
+                    }, 800);
                 } else {
                     this.message = {
                         text: 'Invalid username or password.',
@@ -326,6 +336,23 @@ body {
     background: #ccc;
     cursor: not-allowed;
     transform: none;
+}
+
+.register-prompt {
+    margin-top: 18px;
+    font-size: 13px;
+    text-align: center;
+    color: #666;
+}
+
+.register-link {
+    color: #b27722;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.register-link:hover {
+    text-decoration: underline;
 }
 
 .message {
