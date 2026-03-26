@@ -74,101 +74,157 @@
 <script>
 import AppHeader from '../components/AppHeader.vue';
 import Sidebar from '../components/Sidebar.vue';
+import api from '../services/api.js';
 
 export default {
     name: 'DashboardPage',
-    components: {
-        AppHeader,
-        Sidebar
-    },
+    components: { AppHeader, Sidebar },
+
     data() {
         return {
             sidebarOpen: true,
             currentDate: '',
             searchQuery: '',
-            stats: [
-                { title: 'Total Students', value: '1,1111', icon: '👥' },
-                { title: 'Active Profiles', value: '800', icon: '✅' },
-                { title: 'Average Age', value: '20', icon: '📊' }
-            ],
-            violationStudents: [
-                {
-                    id: 1,
-                    name: 'Nicoli B. Alonso',
-                    number: '12312312323',
-                    date: 'Mar 31, 2026',
-                    status: 'Active',
-                    violation: 'Nagsalita sa loob ng room'
-                },
-                {
-                    id: 2,
-                    name: 'Aira Dela Cruz',
-                    number: '2024-00123',
-                    date: 'Mar 29, 2026',
-                    status: 'Pending',
-                    violation: 'Late submission of report'
-                },
-                {
-                    id: 3,
-                    name: 'Marco Reyes',
-                    number: '2024-00124',
-                    date: 'Mar 28, 2026',
-                    status: 'Resolved',
-                    violation: 'Dress code violation'
-                },
-                {
-                    id: 4,
-                    name: 'Joana Marie Lumogda',
-                    number: '2024-00121',
-                    date: 'Mar 27, 2026',
-                    status: 'Active',
-                    violation: 'Library noise complaint'
-                }
-            ],
+
+            // Loading states
+            statsLoading: false,
+            violationsLoading: false,
+
+            // Stats - fetched from API
+            stats: [],
+
+            // Violations - fetched from API
+            violationStudents: [],
+
+            // Events - static until events table is built
             upcomingEvents: [
                 { id: 1, title: 'Student Orientation', date: 'Apr 3, 2026', location: 'Main Hall' },
-                { id: 2, title: 'Hackathon Kickoff', date: 'Apr 8, 2026', location: 'Lab 2' },
-                { id: 3, title: 'Department Assembly', date: 'Apr 20, 2026', location: 'Auditorium' }
-            ]
+                { id: 2, title: 'Hackathon Kickoff',   date: 'Apr 8, 2026', location: 'Lab 2' },
+                { id: 3, title: 'Department Assembly', date: 'Apr 20, 2026', location: 'Auditorium' },
+            ],
         };
     },
+
     computed: {
         filteredStats() {
             const query = this.searchQuery.trim().toLowerCase();
             if (!query) return this.stats;
-
-            return this.stats.filter((stat) => {
-                return [stat.title, stat.value].some((value) => String(value).toLowerCase().includes(query));
-            });
+            return this.stats.filter((stat) =>
+                [stat.title, String(stat.value)].some((v) =>
+                    v.toLowerCase().includes(query)
+                )
+            );
         },
+
         filteredViolationStudents() {
             const query = this.searchQuery.trim().toLowerCase();
             if (!query) return this.violationStudents;
-
-            return this.violationStudents.filter((student) => {
-                return [student.name, student.number, student.date, student.status, student.violation]
-                    .some((value) => String(value).toLowerCase().includes(query));
-            });
+            return this.violationStudents.filter((v) =>
+                [
+                    v.name,
+                    v.number,
+                    v.date,
+                    v.status,
+                    v.violation,
+                ].some((val) => String(val ?? '').toLowerCase().includes(query))
+            );
         },
+
         filteredUpcomingEvents() {
             const query = this.searchQuery.trim().toLowerCase();
             if (!query) return this.upcomingEvents;
-
-            return this.upcomingEvents.filter((event) => {
-                return [event.title, event.date, event.location]
-                    .some((value) => String(value).toLowerCase().includes(query));
-            });
-        }
+            return this.upcomingEvents.filter((event) =>
+                [event.title, event.date, event.location].some((v) =>
+                    v.toLowerCase().includes(query)
+                )
+            );
+        },
     },
+
     methods: {
         getFormattedDate() {
-            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const options = {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+            };
             return new Date().toLocaleDateString('en-US', options);
-        }
+        },
+
+        formatDate(dateStr) {
+            if (!dateStr) return 'N/A';
+            return new Date(dateStr).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+            });
+        },
+
+        // Fetch stat cards from /api/v1/dashboard/stats
+        async fetchStats() {
+            this.statsLoading = true;
+            try {
+                const { data } = await api.get('/dashboard/stats');
+                this.stats = [
+                    {
+                        title: 'Total Students',
+                        value: Number(data.total_students).toLocaleString(),
+                        icon: '👥',
+                    },
+                    {
+                        title: 'Active Profiles',
+                        value: Number(data.active_profiles).toLocaleString(),
+                        icon: '✅',
+                    },
+                    {
+                        title: 'Average Age',
+                        value: data.average_age,
+                        icon: '📊',
+                    },
+                ];
+            } catch (err) {
+                console.error('Failed to load stats:', err);
+                // Fallback so cards are not empty if API is down
+                this.stats = [
+                    { title: 'Total Students',  value: '—', icon: '👥' },
+                    { title: 'Active Profiles', value: '—', icon: '✅' },
+                    { title: 'Average Age',     value: '—', icon: '📊' },
+                ];
+            } finally {
+                this.statsLoading = false;
+            }
+        },
+
+        // Fetch violations from /api/v1/student-violations
+        async fetchViolations() {
+            this.violationsLoading = true;
+            try {
+                const { data } = await api.get('/student-violations');
+
+                // Map API response to match the shape the template already uses
+                this.violationStudents = data.map((v) => ({
+                    id:        v.violation_id,
+                    name:      `${v.student.first_name} ${v.student.middle_name ? v.student.middle_name[0] + '. ' : ''}${v.student.last_name}`,
+                    number:    v.student.student_number,
+                    date:      this.formatDate(v.violation_date),
+                    status:    v.status,
+                    violation: v.violationType?.violation_name + (v.description ? ` — ${v.description}` : ''),
+                }));
+            } catch (err) {
+                console.error('Failed to load violations:', err);
+                this.violationStudents = [];
+            } finally {
+                this.violationsLoading = false;
+            }
+        },
     },
+
     mounted() {
         this.currentDate = this.getFormattedDate();
-    }
+        this.fetchStats();
+        this.fetchViolations();
+    },
 };
 </script>
 
