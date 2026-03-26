@@ -15,9 +15,13 @@
                         <input type="text" placeholder="Search" class="search-input">
                     </div>
                     <button class="notif-btn">🔔</button>
-                    <div class="user-profile">
-                        <img src="https://via.placeholder.com/40" alt="Profile" class="profile-img">
-                    </div>
+                    <router-link to="/profile" class="profile-link">
+                        <div class="user-profile">
+                            <img v-if="profile.avatar" :src="profile.avatar" alt="Profile" class="profile-img">
+                            <div v-else class="profile-fallback">{{ profileInitials }}</div>
+                        </div>
+                        <span class="profile-name">{{ shortName }}</span>
+                    </router-link>
                 </div>
             </header>
 
@@ -97,6 +101,10 @@ export default {
         return {
             sidebarOpen: true,
             currentDate: '',
+            profile: {
+                fullName: 'Joana Lumogda',
+                avatar: ''
+            },
             violationStudents: [
                 {
                     id: 1,
@@ -153,10 +161,33 @@ export default {
         getFormattedDate() {
             const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
             return new Date().toLocaleDateString('en-US', options);
+        },
+        loadProfile() {
+            const savedProfile = JSON.parse(localStorage.getItem('profileData') || 'null');
+            if (savedProfile) {
+                this.profile = {
+                    fullName: savedProfile.fullName || 'Joana Lumogda',
+                    avatar: savedProfile.avatar || ''
+                };
+            }
+        }
+    },
+    computed: {
+        shortName() {
+            return this.profile.fullName || 'Profile';
+        },
+        profileInitials() {
+            return this.profile.fullName
+                .split(' ')
+                .filter(Boolean)
+                .slice(0, 2)
+                .map((part) => part[0]?.toUpperCase() || '')
+                .join('') || 'JP';
         }
     },
     mounted() {
         this.currentDate = this.getFormattedDate();
+        this.loadProfile();
     }
 };
 </script>
@@ -195,6 +226,14 @@ export default {
     display: flex;
     align-items: center;
     gap: 15px;
+}
+
+.profile-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #1a1a1a;
+    text-decoration: none;
 }
 
 .notif-btn {
@@ -286,12 +325,28 @@ export default {
     border-radius: 50%;
     overflow: hidden;
     cursor: pointer;
+    background: rgba(255, 255, 255, 0.18);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .profile-img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+}
+
+.profile-fallback {
+    color: white;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.profile-name {
+    color: #1a1a1a;
+    font-size: 15px;
+    font-weight: 600;
 }
 
 .dashboard-content {
