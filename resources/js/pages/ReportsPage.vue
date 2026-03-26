@@ -3,7 +3,12 @@
         <sidebar :is-open="sidebarOpen" @toggle="sidebarOpen = !sidebarOpen"></sidebar>
 
         <div class="main-content">
-            <app-header title="Reports Center" :subtitle="currentDate"></app-header>
+            <app-header
+                title="Reports Center"
+                :subtitle="currentDate"
+                :search-query="searchQuery"
+                @update:search-query="searchQuery = $event"
+            ></app-header>
 
             <div class="reports-content">
                 <div class="page-header">
@@ -12,12 +17,16 @@
                 </div>
 
                 <div class="report-grid">
-                    <article class="report-card" v-for="report in reports" :key="report.id">
+                    <article class="report-card" v-for="report in filteredReports" :key="report.id">
                         <div class="report-icon">{{ report.icon }}</div>
                         <h3>{{ report.title }}</h3>
                         <p>{{ report.description }}</p>
                         <span class="report-meta">Updated {{ report.updated }}</span>
                     </article>
+                </div>
+
+                <div v-if="!filteredReports.length" class="empty-state">
+                    No reports matched your search.
                 </div>
             </div>
         </div>
@@ -38,6 +47,7 @@ export default {
         return {
             sidebarOpen: true,
             currentDate: '',
+            searchQuery: '',
             reports: [
                 { id: 1, icon: '📄', title: 'Attendance Summary', description: 'Overview of monthly attendance trends and absences.', updated: '2 hours ago' },
                 { id: 2, icon: '📊', title: 'Violation Analytics', description: 'Breakdown of reported cases by category and status.', updated: 'Today' },
@@ -45,6 +55,17 @@ export default {
                 { id: 4, icon: '📌', title: 'Pending Case Report', description: 'List of unresolved and under-review student cases.', updated: '3 days ago' }
             ]
         };
+    },
+    computed: {
+        filteredReports() {
+            const query = this.searchQuery.trim().toLowerCase();
+            if (!query) return this.reports;
+
+            return this.reports.filter((report) => {
+                return [report.title, report.description, report.updated]
+                    .some((value) => String(value).toLowerCase().includes(query));
+            });
+        }
     },
     methods: {
         getFormattedDate() {
@@ -95,6 +116,16 @@ export default {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     gap: 20px;
+}
+
+.empty-state {
+    margin-top: 18px;
+    padding: 18px 20px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.9);
+    color: #7a4a12;
+    font-weight: 600;
+    text-align: center;
 }
 
 .report-card {

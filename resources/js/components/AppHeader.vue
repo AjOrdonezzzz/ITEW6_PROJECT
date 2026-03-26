@@ -14,7 +14,13 @@
         <div class="top-bar-right">
             <div class="search-container">
                 <span class="search-icon">🔍</span>
-                <input type="text" placeholder="Search" class="search-input">
+                <input
+                    :value="searchQuery"
+                    type="text"
+                    placeholder="Search"
+                    class="search-input"
+                    @input="$emit('update:searchQuery', $event.target.value)"
+                >
             </div>
             <button class="notif-btn">🔔</button>
             <router-link to="/profile" class="profile-link">
@@ -48,6 +54,10 @@ export default {
         showBack: {
             type: Boolean,
             default: false
+        },
+        searchQuery: {
+            type: String,
+            default: ''
         }
     },
     data() {

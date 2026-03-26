@@ -3,7 +3,13 @@
         <sidebar :is-open="sidebarOpen" @toggle="sidebarOpen = !sidebarOpen"></sidebar>
 
         <div class="main-content">
-            <app-header title="Profile Settings" :subtitle="currentDate" :show-back="true"></app-header>
+            <app-header
+                title="Profile Settings"
+                :subtitle="currentDate"
+                :show-back="true"
+                :search-query="searchQuery"
+                @update:search-query="searchQuery = $event"
+            ></app-header>
 
             <div class="profile-content">
                 <div class="page-header">
@@ -11,7 +17,7 @@
                     <p class="page-subtitle">Upload your photo and update your personal details.</p>
                 </div>
 
-                <div class="profile-grid">
+                <div v-if="matchesSearch" class="profile-grid">
                     <section class="profile-card profile-preview">
                         <div class="avatar-wrap">
                             <img v-if="form.avatar" :src="form.avatar" alt="Profile photo" class="avatar-image">
@@ -61,6 +67,10 @@
                         </div>
                     </section>
                 </div>
+
+                <div v-else class="empty-state">
+                    No profile details matched your search.
+                </div>
             </div>
         </div>
     </div>
@@ -89,6 +99,7 @@ export default {
         return {
             sidebarOpen: true,
             currentDate: '',
+            searchQuery: '',
             form: { ...DEFAULT_PROFILE },
             savedMessage: ''
         };
@@ -101,6 +112,21 @@ export default {
                 .slice(0, 2)
                 .map((part) => part[0]?.toUpperCase() || '')
                 .join('') || 'UP';
+        },
+        matchesSearch() {
+            const query = this.searchQuery.trim().toLowerCase();
+            if (!query) return true;
+
+            return [
+                this.form.fullName,
+                this.form.role,
+                this.form.email,
+                this.form.phone,
+                this.form.bio,
+                'profile',
+                'picture',
+                'upload'
+            ].some((value) => String(value).toLowerCase().includes(query));
         }
     },
     methods: {
@@ -177,6 +203,15 @@ export default {
     display: grid;
     grid-template-columns: 320px 1fr;
     gap: 24px;
+}
+
+.empty-state {
+    padding: 18px 20px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.9);
+    color: #7a4a12;
+    font-weight: 600;
+    text-align: center;
 }
 
 .profile-card {

@@ -3,7 +3,12 @@
         <sidebar :is-open="sidebarOpen" @toggle="sidebarOpen = !sidebarOpen"></sidebar>
 
         <div class="main-content">
-            <app-header title="Students Directory" :subtitle="currentDate"></app-header>
+            <app-header
+                title="Students Directory"
+                :subtitle="currentDate"
+                :search-query="searchQuery"
+                @update:search-query="searchQuery = $event"
+            ></app-header>
 
             <div class="students-content">
                 <div class="page-header">
@@ -49,8 +54,8 @@
                     </div>
                 </section>
 
-                <div class="student-grid">
-                    <article class="student-card" v-for="student in students" :key="student.id">
+                <div v-if="filteredStudents.length" class="student-grid">
+                    <article class="student-card" v-for="student in filteredStudents" :key="student.id" @click="openStudent(student)">
                         <div class="student-avatar">{{ student.initials }}</div>
                         <div class="student-info">
                             <h3>{{ student.name }}</h3>
@@ -60,6 +65,51 @@
                         <div class="student-status">{{ student.status }}</div>
                     </article>
                 </div>
+
+                <div v-else class="empty-state">
+                    No students matched your search.
+                </div>
+
+                <div v-if="selectedStudent" class="student-modal-overlay" @click.self="closeStudent">
+                    <div class="student-modal">
+                        <div class="student-modal-header">
+                            <h2>Edit Student</h2>
+                            <button class="close-btn" @click="closeStudent">×</button>
+                        </div>
+
+                        <div class="form-grid">
+                            <label class="field">
+                                <span>Full name</span>
+                                <input v-model="selectedStudent.name" type="text">
+                            </label>
+
+                            <label class="field">
+                                <span>Course</span>
+                                <input v-model="selectedStudent.course" type="text">
+                            </label>
+
+                            <label class="field">
+                                <span>Student number</span>
+                                <input v-model="selectedStudent.studentNumber" type="text">
+                            </label>
+
+                            <label class="field">
+                                <span>Status</span>
+                                <select v-model="selectedStudent.status">
+                                    <option>Active</option>
+                                    <option>Regular</option>
+                                    <option>Probationary</option>
+                                </select>
+                            </label>
+                        </div>
+
+                        <div class="form-actions">
+                            <button class="save-student-btn" @click="updateStudent">Update Student</button>
+                            <button class="delete-student-btn" @click="deleteStudent">Delete Student</button>
+                            <span v-if="editMessage" class="student-message">{{ editMessage }}</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -68,6 +118,29 @@
 <script>
 import AppHeader from '../components/AppHeader.vue';
 import Sidebar from '../components/Sidebar.vue';
+
+const DEFAULT_STUDENTS = [
+    { id: 1, name: 'Joana Marie Lumogda', course: 'BS Information Technology', studentNumber: '2024-00121', status: 'Active', initials: 'JL' },
+    { id: 2, name: 'Nicoli B. Alonso', course: 'BS Computer Science', studentNumber: '2024-00122', status: 'Active', initials: 'NA' },
+    { id: 3, name: 'Aira Dela Cruz', course: 'BS Information Systems', studentNumber: '2024-00123', status: 'Regular', initials: 'AD' },
+    { id: 4, name: 'Marco Reyes', course: 'BS Information Technology', studentNumber: '2024-00124', status: 'Probationary', initials: 'MR' },
+    { id: 5, name: 'Leah Santos', course: 'BS Computer Science', studentNumber: '2024-00125', status: 'Active', initials: 'LS' },
+    { id: 6, name: 'Paolo Fernandez', course: 'BS Information Technology', studentNumber: '2024-00126', status: 'Regular', initials: 'PF' },
+    { id: 7, name: 'Denise Mercado', course: 'BS Information Systems', studentNumber: '2024-00127', status: 'Active', initials: 'DM' },
+    { id: 8, name: 'Ralph Mendoza', course: 'BS Computer Science', studentNumber: '2024-00128', status: 'Active', initials: 'RM' },
+    { id: 9, name: 'Angela Robles', course: 'BS Information Technology', studentNumber: '2024-00129', status: 'Regular', initials: 'AR' },
+    { id: 10, name: 'Jared Villanueva', course: 'BS Information Systems', studentNumber: '2024-00130', status: 'Probationary', initials: 'JV' },
+    { id: 11, name: 'Trisha Gomez', course: 'BS Computer Science', studentNumber: '2024-00131', status: 'Active', initials: 'TG' },
+    { id: 12, name: 'Ethan Cruz', course: 'BS Information Technology', studentNumber: '2024-00132', status: 'Active', initials: 'EC' },
+    { id: 13, name: 'Camille Navarro', course: 'BS Information Systems', studentNumber: '2024-00133', status: 'Regular', initials: 'CN' },
+    { id: 14, name: 'Bryan Dizon', course: 'BS Computer Science', studentNumber: '2024-00134', status: 'Active', initials: 'BD' },
+    { id: 15, name: 'Mikaela Torres', course: 'BS Information Technology', studentNumber: '2024-00135', status: 'Active', initials: 'MT' },
+    { id: 16, name: 'Sean Bautista', course: 'BS Information Systems', studentNumber: '2024-00136', status: 'Regular', initials: 'SB' },
+    { id: 17, name: 'Patricia Lim', course: 'BS Computer Science', studentNumber: '2024-00137', status: 'Active', initials: 'PL' },
+    { id: 18, name: 'Harvey Garcia', course: 'BS Information Technology', studentNumber: '2024-00138', status: 'Probationary', initials: 'HG' },
+    { id: 19, name: 'Nicole Aquino', course: 'BS Information Systems', studentNumber: '2024-00139', status: 'Active', initials: 'NA' },
+    { id: 20, name: 'Vincent Ramos', course: 'BS Computer Science', studentNumber: '2024-00140', status: 'Regular', initials: 'VR' }
+];
 
 export default {
     name: 'StudentsPage',
@@ -81,34 +154,16 @@ export default {
             currentDate: '',
             showAddForm: false,
             studentMessage: '',
+            editMessage: '',
+            selectedStudent: null,
+            searchQuery: '',
             newStudent: {
                 name: '',
                 course: '',
                 studentNumber: '',
                 status: 'Active'
             },
-            students: [
-                { id: 1, name: 'Joana Marie Lumogda', course: 'BS Information Technology', studentNumber: '2024-00121', status: 'Active', initials: 'JL' },
-                { id: 2, name: 'Nicoli B. Alonso', course: 'BS Computer Science', studentNumber: '2024-00122', status: 'Active', initials: 'NA' },
-                { id: 3, name: 'Aira Dela Cruz', course: 'BS Information Systems', studentNumber: '2024-00123', status: 'Regular', initials: 'AD' },
-                { id: 4, name: 'Marco Reyes', course: 'BS Information Technology', studentNumber: '2024-00124', status: 'Probationary', initials: 'MR' },
-                { id: 5, name: 'Leah Santos', course: 'BS Computer Science', studentNumber: '2024-00125', status: 'Active', initials: 'LS' },
-                { id: 6, name: 'Paolo Fernandez', course: 'BS Information Technology', studentNumber: '2024-00126', status: 'Regular', initials: 'PF' },
-                { id: 7, name: 'Denise Mercado', course: 'BS Information Systems', studentNumber: '2024-00127', status: 'Active', initials: 'DM' },
-                { id: 8, name: 'Ralph Mendoza', course: 'BS Computer Science', studentNumber: '2024-00128', status: 'Active', initials: 'RM' },
-                { id: 9, name: 'Angela Robles', course: 'BS Information Technology', studentNumber: '2024-00129', status: 'Regular', initials: 'AR' },
-                { id: 10, name: 'Jared Villanueva', course: 'BS Information Systems', studentNumber: '2024-00130', status: 'Probationary', initials: 'JV' },
-                { id: 11, name: 'Trisha Gomez', course: 'BS Computer Science', studentNumber: '2024-00131', status: 'Active', initials: 'TG' },
-                { id: 12, name: 'Ethan Cruz', course: 'BS Information Technology', studentNumber: '2024-00132', status: 'Active', initials: 'EC' },
-                { id: 13, name: 'Camille Navarro', course: 'BS Information Systems', studentNumber: '2024-00133', status: 'Regular', initials: 'CN' },
-                { id: 14, name: 'Bryan Dizon', course: 'BS Computer Science', studentNumber: '2024-00134', status: 'Active', initials: 'BD' },
-                { id: 15, name: 'Mikaela Torres', course: 'BS Information Technology', studentNumber: '2024-00135', status: 'Active', initials: 'MT' },
-                { id: 16, name: 'Sean Bautista', course: 'BS Information Systems', studentNumber: '2024-00136', status: 'Regular', initials: 'SB' },
-                { id: 17, name: 'Patricia Lim', course: 'BS Computer Science', studentNumber: '2024-00137', status: 'Active', initials: 'PL' },
-                { id: 18, name: 'Harvey Garcia', course: 'BS Information Technology', studentNumber: '2024-00138', status: 'Probationary', initials: 'HG' },
-                { id: 19, name: 'Nicole Aquino', course: 'BS Information Systems', studentNumber: '2024-00139', status: 'Active', initials: 'NA' },
-                { id: 20, name: 'Vincent Ramos', course: 'BS Computer Science', studentNumber: '2024-00140', status: 'Regular', initials: 'VR' }
-            ]
+            students: [...DEFAULT_STUDENTS]
         };
     },
     methods: {
@@ -123,6 +178,18 @@ export default {
                 .slice(0, 2)
                 .map((part) => part[0]?.toUpperCase() || '')
                 .join('');
+        },
+        saveStudents() {
+            localStorage.setItem('studentsData', JSON.stringify(this.students));
+        },
+        loadStudents() {
+            const savedStudents = JSON.parse(localStorage.getItem('studentsData') || 'null');
+            if (savedStudents && Array.isArray(savedStudents) && savedStudents.length) {
+                this.students = savedStudents;
+                return;
+            }
+
+            this.students = [...DEFAULT_STUDENTS];
         },
         addStudent() {
             const { name, course, studentNumber, status } = this.newStudent;
@@ -140,6 +207,7 @@ export default {
                 status,
                 initials: this.getInitials(name.trim())
             });
+            this.saveStudents();
 
             this.newStudent = {
                 name: '',
@@ -153,10 +221,69 @@ export default {
             setTimeout(() => {
                 this.studentMessage = '';
             }, 2000);
+        },
+        openStudent(student) {
+            this.selectedStudent = { ...student };
+            this.editMessage = '';
+        },
+        closeStudent() {
+            this.selectedStudent = null;
+            this.editMessage = '';
+        },
+        updateStudent() {
+            if (!this.selectedStudent.name.trim() || !this.selectedStudent.course.trim() || !this.selectedStudent.studentNumber.trim()) {
+                this.editMessage = 'Please complete all student fields.';
+                return;
+            }
+
+            const index = this.students.findIndex((student) => student.id === this.selectedStudent.id);
+            if (index === -1) return;
+
+            this.students[index] = {
+                ...this.selectedStudent,
+                name: this.selectedStudent.name.trim(),
+                course: this.selectedStudent.course.trim(),
+                studentNumber: this.selectedStudent.studentNumber.trim(),
+                initials: this.getInitials(this.selectedStudent.name.trim())
+            };
+            this.saveStudents();
+
+            this.editMessage = 'Student updated successfully.';
+
+            setTimeout(() => {
+                this.closeStudent();
+            }, 1000);
+        },
+        deleteStudent() {
+            if (!this.selectedStudent) return;
+
+            this.students = this.students.filter((student) => student.id !== this.selectedStudent.id);
+            this.saveStudents();
+            this.editMessage = 'Student deleted successfully.';
+
+            setTimeout(() => {
+                this.closeStudent();
+            }, 800);
+        }
+    },
+    computed: {
+        filteredStudents() {
+            const query = this.searchQuery.trim().toLowerCase();
+            if (!query) return this.students;
+
+            return this.students.filter((student) => {
+                return [
+                    student.name,
+                    student.course,
+                    student.studentNumber,
+                    student.status
+                ].some((value) => String(value).toLowerCase().includes(query));
+            });
         }
     },
     mounted() {
         this.currentDate = this.getFormattedDate();
+        this.loadStudents();
     }
 };
 </script>
@@ -204,6 +331,17 @@ export default {
     border: none;
     border-radius: 999px;
     background: linear-gradient(135deg, #a89080 0%, #8a7a6a 100%);
+    color: white;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.delete-student-btn {
+    padding: 12px 18px;
+    border: none;
+    border-radius: 999px;
+    background: #ef4444;
     color: white;
     font: inherit;
     font-weight: 600;
@@ -263,11 +401,28 @@ export default {
     gap: 20px;
 }
 
+.empty-state {
+    padding: 28px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.9);
+    color: #7a4a12;
+    font-size: 16px;
+    font-weight: 600;
+    text-align: center;
+}
+
 .student-card {
     background: white;
     border-radius: 20px;
     padding: 22px;
     box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12);
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.student-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.16);
 }
 
 .student-avatar {
@@ -310,6 +465,46 @@ export default {
     color: #92400e;
     font-size: 13px;
     font-weight: 600;
+}
+
+.student-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    z-index: 60;
+}
+
+.student-modal {
+    width: min(760px, 100%);
+    background: white;
+    border-radius: 24px;
+    padding: 24px;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22);
+}
+
+.student-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+}
+
+.student-modal-header h2 {
+    color: #1a1a1a;
+}
+
+.close-btn {
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 50%;
+    background: #f3f4f6;
+    font-size: 24px;
+    cursor: pointer;
 }
 
 @media (max-width: 768px) {
