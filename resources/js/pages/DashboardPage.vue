@@ -105,11 +105,7 @@ export default {
             sidebarOpen: true,
             currentDate: '',
             searchQuery: '',
-            stats: [
-                { title: 'Total Students', value: '1,1111', icon: 'students' },
-                { title: 'Active Profiles', value: '800', icon: 'shield' },
-                { title: 'Average Age', value: '20', icon: 'chart' }
-            ],
+            studentsData: [],
             violationStudents: [
                 {
                     id: 1,
@@ -152,11 +148,27 @@ export default {
         };
     },
     computed: {
+        statsList() {
+            const totalStudents = this.studentsData.length;
+            const activeProfiles = this.studentsData.filter((student) => student.status === 'Active').length;
+            const ages = this.studentsData
+                .map((student) => Number(student.age))
+                .filter((age) => Number.isFinite(age) && age > 0);
+            const averageAge = ages.length
+                ? Math.round(ages.reduce((sum, age) => sum + age, 0) / ages.length)
+                : '--';
+
+            return [
+                { title: 'Total Students', value: String(totalStudents), icon: 'students' },
+                { title: 'Active Profiles', value: String(activeProfiles), icon: 'shield' },
+                { title: 'Average Age', value: String(averageAge), icon: 'chart' }
+            ];
+        },
         filteredStats() {
             const query = this.searchQuery.trim().toLowerCase();
-            if (!query) return this.stats;
+            if (!query) return this.statsList;
 
-            return this.stats.filter((stat) => {
+            return this.statsList.filter((stat) => {
                 return [stat.title, stat.value].some((value) => String(value).toLowerCase().includes(query));
             });
         },
@@ -183,10 +195,19 @@ export default {
         getFormattedDate() {
             const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
             return new Date().toLocaleDateString('en-US', options);
+        },
+        loadStudents() {
+            const savedStudents = JSON.parse(localStorage.getItem('studentsData') || 'null');
+            if (savedStudents && Array.isArray(savedStudents)) {
+                this.studentsData = savedStudents;
+                return;
+            }
+            this.studentsData = [];
         }
     },
     mounted() {
         this.currentDate = this.getFormattedDate();
+        this.loadStudents();
     }
 };
 </script>
