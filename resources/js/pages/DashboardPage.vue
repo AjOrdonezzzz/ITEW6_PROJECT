@@ -190,13 +190,10 @@ export default {
     flex: 1;
     display: flex;
     flex-direction: column;
-    overflow-y: auto;
 }
 
 .dashboard-content {
-    flex: 1;
     padding: 40px;
-    overflow-y: auto;
 }
 
 .dashboard-title {
