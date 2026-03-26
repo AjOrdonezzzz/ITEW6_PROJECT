@@ -73,7 +73,7 @@
 
         <div class="auth-right">
             <div class="hero-circle">
-                <img src="/ccs-logo.jpg" alt="CCS Logo" class="hero-logo">
+                <img src="/images/ccs-logo.jpg" alt="CCS Logo" class="hero-logo">
             </div>
         </div>
     </div>

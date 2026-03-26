@@ -494,7 +494,7 @@ export default {
 }
 
 .profile-name {
-    color: #1a1a1a;
+    color: #ffffff;
     font-size: 15px;
     font-weight: 600;
 }

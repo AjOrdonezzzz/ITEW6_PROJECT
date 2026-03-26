@@ -60,7 +60,7 @@
 
         <div class="login-right">
             <div class="logo-circle">
-                <img src="/ccs-logo.jpg" alt="CCS Logo" class="logo-image">
+                <img src="/images/ccs-logo.jpg" alt="CCS Logo" class="logo-image">
             </div>
         </div>
     </div>
