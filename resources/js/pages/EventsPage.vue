@@ -3,12 +3,12 @@
         <sidebar :is-open="sidebarOpen" @toggle="sidebarOpen = !sidebarOpen"></sidebar>
 
         <div class="main-content">
-            <header class="top-bar">
-                <div class="welcome-section">
-                    <h2>Upcoming Activities</h2>
-                    <p>{{ currentDate }}</p>
-                </div>
-            </header>
+            <app-header
+                title="Upcoming Activities"
+                :subtitle="currentDate"
+                :search-query="searchQuery"
+                @update:search-query="searchQuery = $event"
+            ></app-header>
 
             <div class="events-content">
                 <div class="page-header">
@@ -17,7 +17,7 @@
                 </div>
 
                 <div class="events-grid">
-                    <article class="event-card" v-for="event in events" :key="event.id">
+                    <article class="event-card" v-for="event in filteredEvents" :key="event.id">
                         <div class="event-date">
                             <span class="event-month">{{ event.month }}</span>
                             <strong class="event-day">{{ event.day }}</strong>
@@ -29,23 +29,30 @@
                         </div>
                     </article>
                 </div>
+
+                <div v-if="!filteredEvents.length" class="empty-state">
+                    No events matched your search.
+                </div>
             </div>
         </div>
     </div>
 </template>
 
 <script>
+import AppHeader from '../components/AppHeader.vue';
 import Sidebar from '../components/Sidebar.vue';
 
 export default {
     name: 'EventsPage',
     components: {
+        AppHeader,
         Sidebar
     },
     data() {
         return {
             sidebarOpen: true,
             currentDate: '',
+            searchQuery: '',
             events: [
                 { id: 1, month: 'APR', day: '03', title: 'Student Orientation', description: 'Welcome session for incoming CCS students.', time: '9:00 AM', location: 'Main Hall' },
                 { id: 2, month: 'APR', day: '08', title: 'Hackathon Kickoff', description: 'Team formation and mechanics briefing.', time: '1:00 PM', location: 'Lab 2' },
@@ -53,6 +60,17 @@ export default {
                 { id: 4, month: 'APR', day: '20', title: 'Department Assembly', description: 'Faculty and student updates for the semester.', time: '3:00 PM', location: 'Auditorium' }
             ]
         };
+    },
+    computed: {
+        filteredEvents() {
+            const query = this.searchQuery.trim().toLowerCase();
+            if (!query) return this.events;
+
+            return this.events.filter((event) => {
+                return [event.month, event.day, event.title, event.description, event.time, event.location]
+                    .some((value) => String(value).toLowerCase().includes(query));
+            });
+        }
     },
     methods: {
         getFormattedDate() {
@@ -80,20 +98,6 @@ export default {
     flex-direction: column;
 }
 
-.top-bar {
-    padding: 24px 32px 8px;
-    color: white;
-}
-
-.welcome-section h2 {
-    font-size: 20px;
-    margin-bottom: 6px;
-}
-
-.welcome-section p {
-    opacity: 0.8;
-}
-
 .events-content {
     padding: 24px 32px 40px;
 }
@@ -116,6 +120,16 @@ export default {
 .events-grid {
     display: grid;
     gap: 18px;
+}
+
+.empty-state {
+    margin-top: 18px;
+    padding: 18px 20px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.9);
+    color: #7a4a12;
+    font-weight: 600;
+    text-align: center;
 }
 
 .event-card {

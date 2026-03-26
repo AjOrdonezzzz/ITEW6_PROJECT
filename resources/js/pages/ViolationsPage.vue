@@ -3,12 +3,12 @@
         <sidebar :is-open="sidebarOpen" @toggle="sidebarOpen = !sidebarOpen"></sidebar>
 
         <div class="main-content">
-            <header class="top-bar">
-                <div class="welcome-section">
-                    <h2>Violations Monitoring</h2>
-                    <p>{{ currentDate }}</p>
-                </div>
-            </header>
+            <app-header
+                title="Violations Monitoring"
+                :subtitle="currentDate"
+                :search-query="searchQuery"
+                @update:search-query="searchQuery = $event"
+            ></app-header>
 
             <div class="violations-content">
                 <div class="page-header">
@@ -17,10 +17,14 @@
                 </div>
 
                 <div class="summary-grid">
-                    <div class="summary-card" v-for="summary in summaries" :key="summary.title">
+                    <div class="summary-card" v-for="summary in filteredSummaries" :key="summary.title">
                         <span class="summary-label">{{ summary.title }}</span>
                         <strong class="summary-value">{{ summary.value }}</strong>
                     </div>
+                </div>
+
+                <div v-if="!filteredSummaries.length" class="empty-state">
+                    No summary cards matched your search.
                 </div>
 
                 <div class="table-card">
@@ -37,12 +41,15 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="record in records" :key="record.id">
+                            <tr v-for="record in filteredRecords" :key="record.id">
                                 <td>{{ record.name }}</td>
                                 <td>{{ record.studentNumber }}</td>
                                 <td>{{ record.violation }}</td>
                                 <td>{{ record.date }}</td>
                                 <td><span class="status-badge">{{ record.status }}</span></td>
+                            </tr>
+                            <tr v-if="!filteredRecords.length">
+                                <td colspan="5" class="empty-table-state">No violation reports matched your search.</td>
                             </tr>
                         </tbody>
                     </table>
@@ -53,17 +60,20 @@
 </template>
 
 <script>
+import AppHeader from '../components/AppHeader.vue';
 import Sidebar from '../components/Sidebar.vue';
 
 export default {
     name: 'ViolationsPage',
     components: {
+        AppHeader,
         Sidebar
     },
     data() {
         return {
             sidebarOpen: true,
             currentDate: '',
+            searchQuery: '',
             summaries: [
                 { title: 'Open Cases', value: 12 },
                 { title: 'Resolved This Week', value: 8 },
@@ -76,6 +86,25 @@ export default {
                 { id: 4, name: 'Joana Marie Lumogda', studentNumber: '2024-00121', violation: 'Library noise complaint', date: 'Mar 27, 2026', status: 'Active' }
             ]
         };
+    },
+    computed: {
+        filteredSummaries() {
+            const query = this.searchQuery.trim().toLowerCase();
+            if (!query) return this.summaries;
+
+            return this.summaries.filter((summary) => {
+                return [summary.title, summary.value].some((value) => String(value).toLowerCase().includes(query));
+            });
+        },
+        filteredRecords() {
+            const query = this.searchQuery.trim().toLowerCase();
+            if (!query) return this.records;
+
+            return this.records.filter((record) => {
+                return [record.name, record.studentNumber, record.violation, record.date, record.status]
+                    .some((value) => String(value).toLowerCase().includes(query));
+            });
+        }
     },
     methods: {
         getFormattedDate() {
@@ -103,20 +132,6 @@ export default {
     flex-direction: column;
 }
 
-.top-bar {
-    padding: 24px 32px 8px;
-    color: white;
-}
-
-.welcome-section h2 {
-    font-size: 20px;
-    margin-bottom: 6px;
-}
-
-.welcome-section p {
-    opacity: 0.8;
-}
-
 .violations-content {
     padding: 24px 32px 40px;
 }
@@ -141,6 +156,16 @@ export default {
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 18px;
     margin-bottom: 24px;
+}
+
+.empty-state {
+    margin: -4px 0 24px;
+    padding: 18px 20px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.9);
+    color: #7a4a12;
+    font-weight: 600;
+    text-align: center;
 }
 
 .summary-card {
@@ -200,6 +225,12 @@ export default {
     background: #fde68a;
     color: #92400e;
     font-size: 12px;
+    font-weight: 600;
+}
+
+.empty-table-state {
+    text-align: center;
+    color: #7a4a12;
     font-weight: 600;
 }
 

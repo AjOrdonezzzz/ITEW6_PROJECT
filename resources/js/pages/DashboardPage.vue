@@ -1,53 +1,30 @@
 <template>
     <div class="dashboard-container">
         <sidebar :is-open="sidebarOpen" @toggle="sidebarOpen = !sidebarOpen"></sidebar>
-        
-        <div class="main-content">
-            <header class="top-bar">
-                <div class="welcome-section">
-                    <h2>Welcome, User!</h2>
-                    <p>{{ currentDate }}</p>
-                </div>
 
-                <div class="top-bar-right">
-                    <div class="search-container">
-                        <span class="search-icon">🔍</span>
-                        <input type="text" placeholder="Search" class="search-input">
-                    </div>
-                    <button class="notif-btn">🔔</button>
-                    <div class="user-profile">
-                        <img src="https://via.placeholder.com/40" alt="Profile" class="profile-img">
-                    </div>
-                </div>
-            </header>
+        <div class="main-content">
+            <app-header
+                title="Welcome, User!"
+                :subtitle="currentDate"
+                :search-query="searchQuery"
+                @update:search-query="searchQuery = $event"
+            ></app-header>
 
             <div class="dashboard-content">
                 <h1 class="dashboard-title">Dashboard</h1>
 
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-icon">👥</div>
+                <div v-if="filteredStats.length" class="stats-grid">
+                    <div v-for="stat in filteredStats" :key="stat.title" class="stat-card">
+                        <div class="stat-icon">{{ stat.icon }}</div>
                         <div class="stat-info">
-                            <h3>Total Students</h3>
-                            <p class="stat-number">1,1111</p>
+                            <h3>{{ stat.title }}</h3>
+                            <p class="stat-number">{{ stat.value }}</p>
                         </div>
                     </div>
+                </div>
 
-                    <div class="stat-card">
-                        <div class="stat-icon">✅</div>
-                        <div class="stat-info">
-                            <h3>Active Profiles</h3>
-                            <p class="stat-number">800</p>
-                        </div>
-                    </div>
-
-                    <div class="stat-card">
-                        <div class="stat-icon">📊</div>
-                        <div class="stat-info">
-                            <h3>Average Age</h3>
-                            <p class="stat-number">20</p>
-                        </div>
-                    </div>
+                <div v-else class="empty-state">
+                    No dashboard statistics matched your search.
                 </div>
 
                 <div class="violations-section">
@@ -63,12 +40,15 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="student in violationStudents" :key="student.id">
+                            <tr v-for="student in filteredViolationStudents" :key="student.id">
                                 <td>{{ student.name }}</td>
                                 <td>{{ student.number }}</td>
                                 <td>{{ student.date }}</td>
                                 <td><span class="status-badge">{{ student.status }}</span></td>
                                 <td>{{ student.violation }}</td>
+                            </tr>
+                            <tr v-if="!filteredViolationStudents.length">
+                                <td colspan="5" class="empty-table-state">No violation records matched your search.</td>
                             </tr>
                         </tbody>
                     </table>
@@ -76,8 +56,14 @@
 
                 <div class="events-section">
                     <h2>Upcoming Events</h2>
-                    <div class="events-placeholder">
-                        <p>No upcoming events</p>
+                    <div v-if="filteredUpcomingEvents.length" class="events-list">
+                        <article v-for="event in filteredUpcomingEvents" :key="event.id" class="event-item">
+                            <strong>{{ event.title }}</strong>
+                            <span>{{ event.date }} | {{ event.location }}</span>
+                        </article>
+                    </div>
+                    <div v-else class="events-placeholder">
+                        <p>No upcoming events matched your search.</p>
                     </div>
                 </div>
             </div>
@@ -86,17 +72,25 @@
 </template>
 
 <script>
+import AppHeader from '../components/AppHeader.vue';
 import Sidebar from '../components/Sidebar.vue';
 
 export default {
     name: 'DashboardPage',
     components: {
+        AppHeader,
         Sidebar
     },
     data() {
         return {
             sidebarOpen: true,
             currentDate: '',
+            searchQuery: '',
+            stats: [
+                { title: 'Total Students', value: '1,1111', icon: '👥' },
+                { title: 'Active Profiles', value: '800', icon: '✅' },
+                { title: 'Average Age', value: '20', icon: '📊' }
+            ],
             violationStudents: [
                 {
                     id: 1,
@@ -108,46 +102,63 @@ export default {
                 },
                 {
                     id: 2,
-                    name: 'Nicoli B. Alonso',
-                    number: '12312312323',
-                    date: 'Mar 31, 2026',
-                    status: 'Active',
-                    violation: 'Nagsalita sa loob ng room'
+                    name: 'Aira Dela Cruz',
+                    number: '2024-00123',
+                    date: 'Mar 29, 2026',
+                    status: 'Pending',
+                    violation: 'Late submission of report'
                 },
                 {
                     id: 3,
-                    name: 'Nicoli B. Alonso',
-                    number: '12312312323',
-                    date: 'Mar 31, 2026',
-                    status: 'Active',
-                    violation: 'Nagsalita sa loob ng room'
+                    name: 'Marco Reyes',
+                    number: '2024-00124',
+                    date: 'Mar 28, 2026',
+                    status: 'Resolved',
+                    violation: 'Dress code violation'
                 },
                 {
                     id: 4,
-                    name: 'Nicoli B. Alonso',
-                    number: '12312312323',
-                    date: 'Mar 31, 2026',
+                    name: 'Joana Marie Lumogda',
+                    number: '2024-00121',
+                    date: 'Mar 27, 2026',
                     status: 'Active',
-                    violation: 'Nagsalita sa loob ng room'
-                },
-                {
-                    id: 5,
-                    name: 'Nicoli B. Alonso',
-                    number: '12312312323',
-                    date: 'Mar 31, 2026',
-                    status: 'Active',
-                    violation: 'Nagsalita sa loob ng room'
-                },
-                {
-                    id: 6,
-                    name: 'Nicoli B. Alonso',
-                    number: '12312312323',
-                    date: 'Mar 31, 2026',
-                    status: 'Active',
-                    violation: 'Nagsalita sa loob ng room'
-                },
+                    violation: 'Library noise complaint'
+                }
+            ],
+            upcomingEvents: [
+                { id: 1, title: 'Student Orientation', date: 'Apr 3, 2026', location: 'Main Hall' },
+                { id: 2, title: 'Hackathon Kickoff', date: 'Apr 8, 2026', location: 'Lab 2' },
+                { id: 3, title: 'Department Assembly', date: 'Apr 20, 2026', location: 'Auditorium' }
             ]
         };
+    },
+    computed: {
+        filteredStats() {
+            const query = this.searchQuery.trim().toLowerCase();
+            if (!query) return this.stats;
+
+            return this.stats.filter((stat) => {
+                return [stat.title, stat.value].some((value) => String(value).toLowerCase().includes(query));
+            });
+        },
+        filteredViolationStudents() {
+            const query = this.searchQuery.trim().toLowerCase();
+            if (!query) return this.violationStudents;
+
+            return this.violationStudents.filter((student) => {
+                return [student.name, student.number, student.date, student.status, student.violation]
+                    .some((value) => String(value).toLowerCase().includes(query));
+            });
+        },
+        filteredUpcomingEvents() {
+            const query = this.searchQuery.trim().toLowerCase();
+            if (!query) return this.upcomingEvents;
+
+            return this.upcomingEvents.filter((event) => {
+                return [event.title, event.date, event.location]
+                    .some((value) => String(value).toLowerCase().includes(query));
+            });
+        }
     },
     methods: {
         getFormattedDate() {
@@ -182,137 +193,10 @@ export default {
     overflow-y: auto;
 }
 
-.top-bar {
-    background:transparent;
-    padding: 20px 30px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    backdrop-filter: blur(10px);
-}
-
-.top-bar-right {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
-.notif-btn {
-    background: rgba(255, 255, 255, 0.15);
-    border: none;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    cursor: pointer;
-    font-size: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    transition: background 0.3s ease;
-}
-
-.notif-btn:hover {
-    background: rgba(255, 255, 255, 0.25);
-}
-
-.menu-btn {
-    display: none;
-    flex-direction: column;
-    gap: 5px;
-    background: none;
-    border: none;
-    cursor: pointer;
-}
-
-.menu-btn span {
-    width: 25px;
-    height: 3px;
-    background: white;
-    border-radius: 2px;
-    transition: all 0.3s ease;
-}
-
-.search-container {
-    position: relative;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex: 1;
-    max-width: 300px;
-}
-
-.search-icon {
-    position: absolute;
-    left: 12px;
-    font-size: 14px;
-    pointer-events: none;
-    opacity: 0.5;
-}
-.search-input {
-    padding: 10px 15px 10px 36px; /* left padding makes room for the icon */
-    border: none;
-    border-radius: 25px;
-    font-size: 14px;
-    font-family: 'Poppins', sans-serif;
-    width: 220px;
-    background: rgba(255, 255, 255, 0.9);
-}
-
-
-.search-btn {
-    background: #ff6b35;
-    color: white;
-    border: none;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    cursor: pointer;
-    font-size: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
-}
-
-.search-btn:hover {
-    background: #ff5520;
-    transform: scale(1.05);
-}
-
-.user-profile {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    overflow: hidden;
-    cursor: pointer;
-}
-
-.profile-img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
 .dashboard-content {
     flex: 1;
     padding: 40px;
     overflow-y: auto;
-}
-
-.welcome-section {
-    color: white;
-    margin-bottom: 30px;
-}
-
-.welcome-section h2 {
-    font-size: 20px;
-    margin-bottom: 5px;
-}
-
-.welcome-section p {
-    font-size: 14px;
-    opacity: 0.8;
 }
 
 .dashboard-title {
@@ -343,6 +227,16 @@ export default {
 .stat-card:hover {
     transform: translateY(-5px);
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.empty-state {
+    margin: -12px 0 28px;
+    padding: 18px 20px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.9);
+    color: #7a4a12;
+    font-weight: 600;
+    text-align: center;
 }
 
 .stat-icon {
@@ -413,6 +307,12 @@ export default {
     background: #f9f9f9;
 }
 
+.empty-table-state {
+    text-align: center;
+    color: #7a4a12;
+    font-weight: 600;
+}
+
 .status-badge {
     background: #d1fae5;
     color: #065f46;
@@ -439,13 +339,30 @@ export default {
     font-weight: 700;
 }
 
+.events-list {
+    display: grid;
+    gap: 14px;
+}
+
+.event-item {
+    padding: 18px 20px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.92);
+    color: #3a2b1a;
+}
+
+.event-item strong {
+    display: block;
+    margin-bottom: 6px;
+}
+
 .events-placeholder {
     flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
-    opacity: 0.8;
+    opacity: 0.88;
     font-size: 16px;
 }
 
@@ -456,10 +373,6 @@ export default {
 
     .stats-grid {
         grid-template-columns: 1fr;
-    }
-
-    .menu-btn {
-        display: flex;
     }
 
     .dashboard-title {

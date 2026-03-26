@@ -3,12 +3,12 @@
         <sidebar :is-open="sidebarOpen" @toggle="sidebarOpen = !sidebarOpen"></sidebar>
 
         <div class="main-content">
-            <header class="top-bar">
-                <div class="welcome-section">
-                    <h2>System Preferences</h2>
-                    <p>{{ currentDate }}</p>
-                </div>
-            </header>
+            <app-header
+                title="System Preferences"
+                :subtitle="currentDate"
+                :search-query="searchQuery"
+                @update:search-query="searchQuery = $event"
+            ></app-header>
 
             <div class="settings-content">
                 <div class="page-header">
@@ -17,41 +17,17 @@
                 </div>
 
                 <div class="settings-grid">
-                    <section class="settings-card">
-                        <h3>Profile</h3>
-                        <div class="setting-row">
-                            <span>Display Name</span>
-                            <strong>Joana Lumogda</strong>
-                        </div>
-                        <div class="setting-row">
-                            <span>Role</span>
-                            <strong>Student Admin</strong>
+                    <section v-for="section in filteredSections" :key="section.title" class="settings-card">
+                        <h3>{{ section.title }}</h3>
+                        <div v-for="item in section.items" :key="item.label" class="setting-row">
+                            <span>{{ item.label }}</span>
+                            <strong>{{ item.value }}</strong>
                         </div>
                     </section>
+                </div>
 
-                    <section class="settings-card">
-                        <h3>Preferences</h3>
-                        <div class="setting-row">
-                            <span>Email Notifications</span>
-                            <strong>Enabled</strong>
-                        </div>
-                        <div class="setting-row">
-                            <span>Theme</span>
-                            <strong>Warm Brown</strong>
-                        </div>
-                    </section>
-
-                    <section class="settings-card">
-                        <h3>Security</h3>
-                        <div class="setting-row">
-                            <span>Password Status</span>
-                            <strong>Updated recently</strong>
-                        </div>
-                        <div class="setting-row">
-                            <span>Session</span>
-                            <strong>Active on this device</strong>
-                        </div>
-                    </section>
+                <div v-if="!filteredSections.length" class="empty-state">
+                    No settings matched your search.
                 </div>
             </div>
         </div>
@@ -59,18 +35,60 @@
 </template>
 
 <script>
+import AppHeader from '../components/AppHeader.vue';
 import Sidebar from '../components/Sidebar.vue';
 
 export default {
     name: 'SettingsPage',
     components: {
+        AppHeader,
         Sidebar
     },
     data() {
         return {
             sidebarOpen: true,
-            currentDate: ''
+            currentDate: '',
+            searchQuery: '',
+            sections: [
+                {
+                    title: 'Profile',
+                    items: [
+                        { label: 'Display Name', value: 'Joana Lumogda' },
+                        { label: 'Role', value: 'Student Admin' }
+                    ]
+                },
+                {
+                    title: 'Preferences',
+                    items: [
+                        { label: 'Email Notifications', value: 'Enabled' },
+                        { label: 'Theme', value: 'Warm Brown' }
+                    ]
+                },
+                {
+                    title: 'Security',
+                    items: [
+                        { label: 'Password Status', value: 'Updated recently' },
+                        { label: 'Session', value: 'Active on this device' }
+                    ]
+                }
+            ]
         };
+    },
+    computed: {
+        filteredSections() {
+            const query = this.searchQuery.trim().toLowerCase();
+            if (!query) return this.sections;
+
+            return this.sections
+                .map((section) => ({
+                    ...section,
+                    items: section.items.filter((item) => {
+                        return [section.title, item.label, item.value]
+                            .some((value) => String(value).toLowerCase().includes(query));
+                    })
+                }))
+                .filter((section) => section.items.length);
+        }
     },
     methods: {
         getFormattedDate() {
@@ -98,20 +116,6 @@ export default {
     flex-direction: column;
 }
 
-.top-bar {
-    padding: 24px 32px 8px;
-    color: white;
-}
-
-.welcome-section h2 {
-    font-size: 20px;
-    margin-bottom: 6px;
-}
-
-.welcome-section p {
-    opacity: 0.8;
-}
-
 .settings-content {
     padding: 24px 32px 40px;
 }
@@ -135,6 +139,16 @@ export default {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     gap: 20px;
+}
+
+.empty-state {
+    margin-top: 18px;
+    padding: 18px 20px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.9);
+    color: #7a4a12;
+    font-weight: 600;
+    text-align: center;
 }
 
 .settings-card {
