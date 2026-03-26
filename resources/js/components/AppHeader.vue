@@ -13,7 +13,12 @@
 
         <div class="top-bar-right">
             <div class="search-container">
-                <span class="search-icon">&#128269;</span>
+                <span class="search-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                        <circle cx="11" cy="11" r="7" />
+                        <path d="m20 20-3.5-3.5" />
+                    </svg>
+                </span>
                 <input
                     :value="searchQuery"
                     type="text"
@@ -23,7 +28,13 @@
                 >
             </div>
             <div class="calendar-wrap">
-                <button class="calendar-btn" title="Calendar" @click="toggleCalendar">&#128197;</button>
+                <button class="calendar-btn" title="Calendar" @click="toggleCalendar" aria-label="Calendar">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <rect x="3" y="5" width="18" height="16" rx="3" />
+                        <path d="M3 10h18" />
+                        <path d="M8 3v4M16 3v4" />
+                    </svg>
+                </button>
 
                 <div v-if="showCalendar" class="calendar-popup">
                     <div class="calendar-popup-header">
@@ -51,7 +62,12 @@
                     <p class="calendar-selected">{{ selectedDateLabel }}</p>
                 </div>
             </div>
-            <button class="notif-btn" title="Notifications">&#128276;</button>
+            <button class="notif-btn" title="Notifications" aria-label="Notifications">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M15 18H5.5a1.5 1.5 0 0 1-1.2-2.4L6 13V10a6 6 0 1 1 12 0v3l1.7 2.6a1.5 1.5 0 0 1-1.2 2.4H15" />
+                    <path d="M9.5 18a2.5 2.5 0 0 0 5 0" />
+                </svg>
+            </button>
             <router-link to="/profile" class="profile-link">
                 <div class="user-profile">
                     <img v-if="profile.avatar" :src="profile.avatar" alt="Profile" class="profile-img">
@@ -293,9 +309,23 @@ export default {
 .search-icon {
     position: absolute;
     left: 12px;
-    font-size: 14px;
     pointer-events: none;
     opacity: 0.5;
+    width: 16px;
+    height: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.search-icon svg {
+    width: 16px;
+    height: 16px;
+    stroke: currentColor;
+    stroke-width: 2;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 
 .search-input {
@@ -320,12 +350,22 @@ export default {
     height: 40px;
     border-radius: 50%;
     cursor: pointer;
-    font-size: 18px;
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
     transition: background 0.3s ease;
+}
+
+.calendar-btn svg,
+.notif-btn svg {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+    stroke-width: 1.9;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 
 .calendar-btn:hover,

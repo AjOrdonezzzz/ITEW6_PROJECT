@@ -5,7 +5,9 @@
                 <span class="logo-text">Menu</span>
             </div>
             <button class="toggle-btn" @click="$emit('toggle')">
-                {{ isOpen ? '◀' : '▶' }}
+                <svg viewBox="0 0 24 24" class="toggle-icon" :class="{ collapsed: !isOpen }" aria-hidden="true">
+                    <path d="M15 6l-6 6 6 6" />
+                </svg>
             </button>
         </div>
 
@@ -18,7 +20,41 @@
                 class="nav-item"
                 :class="{ active: item.route && $route.path === item.route }"
             >
-                <span class="nav-icon">{{ item.icon }}</span>
+                <span class="nav-icon">
+                    <svg v-if="item.icon === 'dashboard'" viewBox="0 0 24 24" aria-hidden="true">
+                        <rect x="3" y="3" width="7" height="8" rx="2" />
+                        <rect x="14" y="3" width="7" height="5" rx="2" />
+                        <rect x="14" y="11" width="7" height="10" rx="2" />
+                        <rect x="3" y="14" width="7" height="7" rx="2" />
+                    </svg>
+                    <svg v-else-if="item.icon === 'students'" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M16 19a4 4 0 0 0-8 0" />
+                        <circle cx="12" cy="9" r="3" />
+                        <path d="M5 19a3 3 0 0 1 3-3" />
+                        <circle cx="6" cy="10" r="2" />
+                        <path d="M19 19a3 3 0 0 0-3-3" />
+                        <circle cx="18" cy="10" r="2" />
+                    </svg>
+                    <svg v-else-if="item.icon === 'violations'" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 4 3 20h18L12 4Z" />
+                        <path d="M12 9v5" />
+                        <circle cx="12" cy="17" r="1" />
+                    </svg>
+                    <svg v-else-if="item.icon === 'events'" viewBox="0 0 24 24" aria-hidden="true">
+                        <rect x="3" y="5" width="18" height="16" rx="3" />
+                        <path d="M3 10h18" />
+                        <path d="M8 3v4M16 3v4" />
+                    </svg>
+                    <svg v-else-if="item.icon === 'reports'" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M7 3h7l5 5v13H7z" />
+                        <path d="M14 3v5h5" />
+                        <path d="M10 13h6M10 17h6M10 9h2" />
+                    </svg>
+                    <svg v-else-if="item.icon === 'settings'" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="3" />
+                        <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 0 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 0 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.2a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 0 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h.1a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.2a1.7 1.7 0 0 0 1 1.5h.1a1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 0 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v.1a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.2a1.7 1.7 0 0 0-1.5 1z" />
+                    </svg>
+                </span>
                 <span class="nav-label" v-show="isOpen">{{ item.label }}</span>
                 <div class="tooltip" v-show="!isOpen">{{ item.label }}</div>
             </component>
@@ -26,7 +62,13 @@
 
         <div class="sidebar-footer">
             <button class="logout-btn" @click="handleLogout">
-                <span class="logout-icon">🚪</span>
+                <span class="logout-icon">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M14 7V5a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-2" />
+                        <path d="M10 12h11" />
+                        <path d="m18 8 4 4-4 4" />
+                    </svg>
+                </span>
                 <span class="logout-text" v-show="isOpen">Logout</span>
             </button>
         </div>
@@ -45,12 +87,12 @@ export default {
     data() {
         return {
             menuItems: [
-                { id: 1, label: 'Dashboard', icon: '📊', route: '/dashboard' },
-                { id: 2, label: 'Students', icon: '👥', route: '/students' },
-                { id: 3, label: 'Violations', icon: '⚠️', route: '/violations' },
-                { id: 4, label: 'Events', icon: '📅', route: '/events' },
-                { id: 5, label: 'Reports', icon: '📋', route: '/reports' },
-                { id: 6, label: 'Settings', icon: '⚙️', route: '/settings' }
+                { id: 1, label: 'Dashboard', icon: 'dashboard', route: '/dashboard' },
+                { id: 2, label: 'Students', icon: 'students', route: '/students' },
+                { id: 3, label: 'Violations', icon: 'violations', route: '/violations' },
+                { id: 4, label: 'Events', icon: 'events', route: '/events' },
+                { id: 5, label: 'Reports', icon: 'reports', route: '/reports' },
+                { id: 6, label: 'Settings', icon: 'settings', route: '/settings' }
             ]
         };
     },
@@ -107,7 +149,6 @@ export default {
     height: 32px;
     border-radius: 8px;
     cursor: pointer;
-    font-size: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -118,6 +159,21 @@ export default {
 
 .toggle-btn:hover {
     background: rgba(255, 255, 255, 0.2);
+}
+
+.toggle-icon {
+    width: 16px;
+    height: 16px;
+    stroke: currentColor;
+    stroke-width: 2.4;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: transform 0.25s ease;
+}
+
+.toggle-icon.collapsed {
+    transform: rotate(180deg);
 }
 
 .sidebar-nav {
@@ -133,9 +189,9 @@ export default {
     align-items: center;
     gap: 15px;
     padding: 12px;
-    color: rgba(255, 255, 255, 0.7);
+    color: rgba(255, 255, 255, 0.72);
     cursor: pointer;
-    border-radius: 8px;
+    border-radius: 12px;
     transition: all 0.3s ease;
     font-size: 15px;
     font-weight: 500;
@@ -150,10 +206,22 @@ export default {
 }
 
 .nav-icon {
-    font-size: 20px;
     width: 28px;
-    text-align: center;
+    height: 28px;
     flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.nav-icon svg {
+    width: 22px;
+    height: 22px;
+    stroke: currentColor;
+    stroke-width: 1.9;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
 }
 
 .nav-label {
@@ -191,7 +259,7 @@ export default {
     background: #ff6b35;
     color: white;
     border: none;
-    border-radius: 8px;
+    border-radius: 12px;
     cursor: pointer;
     font-weight: 600;
     font-family: 'Poppins', sans-serif;
@@ -210,8 +278,20 @@ export default {
 }
 
 .logout-icon {
-    font-size: 18px;
     flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.logout-icon svg {
+    width: 20px;
+    height: 20px;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
 }
 
 @media (max-width: 768px) {
