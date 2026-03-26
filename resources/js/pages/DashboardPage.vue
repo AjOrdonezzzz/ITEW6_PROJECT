@@ -3,27 +3,7 @@
         <sidebar :is-open="sidebarOpen" @toggle="sidebarOpen = !sidebarOpen"></sidebar>
         
         <div class="main-content">
-            <header class="top-bar">
-                <div class="welcome-section">
-                    <h2>Welcome, User!</h2>
-                    <p>{{ currentDate }}</p>
-                </div>
-
-                <div class="top-bar-right">
-                    <div class="search-container">
-                        <span class="search-icon">🔍</span>
-                        <input type="text" placeholder="Search" class="search-input">
-                    </div>
-                    <button class="notif-btn">🔔</button>
-                    <router-link to="/profile" class="profile-link">
-                        <div class="user-profile">
-                            <img v-if="profile.avatar" :src="profile.avatar" alt="Profile" class="profile-img">
-                            <div v-else class="profile-fallback">{{ profileInitials }}</div>
-                        </div>
-                        <span class="profile-name">{{ shortName }}</span>
-                    </router-link>
-                </div>
-            </header>
+            <app-header title="Welcome, User!" :subtitle="currentDate"></app-header>
 
             <div class="dashboard-content">
                 <h1 class="dashboard-title">Dashboard</h1>
@@ -90,21 +70,19 @@
 </template>
 
 <script>
+import AppHeader from '../components/AppHeader.vue';
 import Sidebar from '../components/Sidebar.vue';
 
 export default {
     name: 'DashboardPage',
     components: {
+        AppHeader,
         Sidebar
     },
     data() {
         return {
             sidebarOpen: true,
             currentDate: '',
-            profile: {
-                fullName: 'Joana Lumogda',
-                avatar: ''
-            },
             violationStudents: [
                 {
                     id: 1,
@@ -161,33 +139,10 @@ export default {
         getFormattedDate() {
             const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
             return new Date().toLocaleDateString('en-US', options);
-        },
-        loadProfile() {
-            const savedProfile = JSON.parse(localStorage.getItem('profileData') || 'null');
-            if (savedProfile) {
-                this.profile = {
-                    fullName: savedProfile.fullName || 'Joana Lumogda',
-                    avatar: savedProfile.avatar || ''
-                };
-            }
-        }
-    },
-    computed: {
-        shortName() {
-            return this.profile.fullName || 'Profile';
-        },
-        profileInitials() {
-            return this.profile.fullName
-                .split(' ')
-                .filter(Boolean)
-                .slice(0, 2)
-                .map((part) => part[0]?.toUpperCase() || '')
-                .join('') || 'JP';
         }
     },
     mounted() {
         this.currentDate = this.getFormattedDate();
-        this.loadProfile();
     }
 };
 </script>
@@ -213,48 +168,6 @@ export default {
     overflow-y: auto;
 }
 
-.top-bar {
-    background:transparent;
-    padding: 20px 30px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    backdrop-filter: blur(10px);
-}
-
-.top-bar-right {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
-.profile-link {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    color: #1a1a1a;
-    text-decoration: none;
-}
-
-.notif-btn {
-    background: rgba(255, 255, 255, 0.15);
-    border: none;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    cursor: pointer;
-    font-size: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    transition: background 0.3s ease;
-}
-
-.notif-btn:hover {
-    background: rgba(255, 255, 255, 0.25);
-}
-
 .menu-btn {
     display: none;
     flex-direction: column;
@@ -271,33 +184,6 @@ export default {
     border-radius: 2px;
     transition: all 0.3s ease;
 }
-
-.search-container {
-    position: relative;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex: 1;
-    max-width: 300px;
-}
-
-.search-icon {
-    position: absolute;
-    left: 12px;
-    font-size: 14px;
-    pointer-events: none;
-    opacity: 0.5;
-}
-.search-input {
-    padding: 10px 15px 10px 36px; /* left padding makes room for the icon */
-    border: none;
-    border-radius: 25px;
-    font-size: 14px;
-    font-family: 'Poppins', sans-serif;
-    width: 220px;
-    background: rgba(255, 255, 255, 0.9);
-}
-
 
 .search-btn {
     background: #ff6b35;
@@ -319,55 +205,10 @@ export default {
     transform: scale(1.05);
 }
 
-.user-profile {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    overflow: hidden;
-    cursor: pointer;
-    background: rgba(255, 255, 255, 0.18);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.profile-img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.profile-fallback {
-    color: white;
-    font-size: 14px;
-    font-weight: 700;
-}
-
-.profile-name {
-    color: #1a1a1a;
-    font-size: 15px;
-    font-weight: 600;
-}
-
 .dashboard-content {
     flex: 1;
     padding: 40px;
     overflow-y: auto;
-}
-
-.welcome-section {
-    color: white;
-    margin-bottom: 30px;
-}
-
-.welcome-section h2 {
-    font-size: 20px;
-    margin-bottom: 5px;
-}
-
-.welcome-section p {
-    font-size: 14px;
-    opacity: 0.8;
 }
 
 .dashboard-title {

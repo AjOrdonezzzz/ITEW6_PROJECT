@@ -3,16 +3,7 @@
         <sidebar :is-open="sidebarOpen" @toggle="sidebarOpen = !sidebarOpen"></sidebar>
 
         <div class="main-content">
-            <header class="top-bar">
-                <button class="back-btn" @click="goBack">
-                    <span class="back-icon">←</span>
-                    <span>Back</span>
-                </button>
-                <div class="welcome-section">
-                    <h2>Profile Settings</h2>
-                    <p>{{ currentDate }}</p>
-                </div>
-            </header>
+            <app-header title="Profile Settings" :subtitle="currentDate" :show-back="true"></app-header>
 
             <div class="profile-content">
                 <div class="page-header">
@@ -76,6 +67,7 @@
 </template>
 
 <script>
+import AppHeader from '../components/AppHeader.vue';
 import Sidebar from '../components/Sidebar.vue';
 
 const DEFAULT_PROFILE = {
@@ -90,6 +82,7 @@ const DEFAULT_PROFILE = {
 export default {
     name: 'ProfilePage',
     components: {
+        AppHeader,
         Sidebar
     },
     data() {
@@ -138,14 +131,6 @@ export default {
             setTimeout(() => {
                 this.savedMessage = '';
             }, 2000);
-        },
-        goBack() {
-            if (window.history.length > 1) {
-                this.$router.back();
-                return;
-            }
-
-            this.$router.push('/dashboard');
         }
     },
     mounted() {
@@ -169,23 +154,6 @@ export default {
     flex-direction: column;
 }
 
-.top-bar {
-    padding: 24px 32px 8px;
-    color: white;
-    display: flex;
-    align-items: flex-start;
-    gap: 16px;
-}
-
-.welcome-section h2 {
-    font-size: 20px;
-    margin-bottom: 6px;
-}
-
-.welcome-section p {
-    opacity: 0.8;
-}
-
 .profile-content {
     padding: 24px 32px 40px;
 }
@@ -193,33 +161,6 @@ export default {
 .page-header {
     margin-bottom: 26px;
     color: white;
-}
-
-.back-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 16px;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
-    border: none;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.22);
-    color: white;
-    font: inherit;
-    font-weight: 600;
-    cursor: pointer;
-    transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
-}
-
-.back-btn:hover {
-    background: rgba(255, 255, 255, 0.3);
-    transform: translateY(-1px);
-    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
-}
-
-.back-icon {
-    font-size: 18px;
-    line-height: 1;
 }
 
 .page-title {
@@ -355,15 +296,9 @@ export default {
 }
 
 @media (max-width: 768px) {
-    .profile-content,
-    .top-bar {
+    .profile-content {
         padding-left: 20px;
         padding-right: 20px;
-    }
-
-    .top-bar {
-        flex-direction: column;
-        align-items: flex-start;
     }
 
     .form-grid {

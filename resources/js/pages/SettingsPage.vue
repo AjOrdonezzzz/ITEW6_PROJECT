@@ -3,12 +3,7 @@
         <sidebar :is-open="sidebarOpen" @toggle="sidebarOpen = !sidebarOpen"></sidebar>
 
         <div class="main-content">
-            <header class="top-bar">
-                <div class="welcome-section">
-                    <h2>System Preferences</h2>
-                    <p>{{ currentDate }}</p>
-                </div>
-            </header>
+            <app-header title="System Preferences" :subtitle="currentDate"></app-header>
 
             <div class="settings-content">
                 <div class="page-header">
@@ -59,11 +54,13 @@
 </template>
 
 <script>
+import AppHeader from '../components/AppHeader.vue';
 import Sidebar from '../components/Sidebar.vue';
 
 export default {
     name: 'SettingsPage',
     components: {
+        AppHeader,
         Sidebar
     },
     data() {
@@ -96,20 +93,6 @@ export default {
     flex: 1;
     display: flex;
     flex-direction: column;
-}
-
-.top-bar {
-    padding: 24px 32px 8px;
-    color: white;
-}
-
-.welcome-section h2 {
-    font-size: 20px;
-    margin-bottom: 6px;
-}
-
-.welcome-section p {
-    opacity: 0.8;
 }
 
 .settings-content {
