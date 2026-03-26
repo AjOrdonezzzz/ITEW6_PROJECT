@@ -12,7 +12,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('student_skills', function (Blueprint $table) {
-            $table->id();
+            $table->id('record_id');
+            $table->foreignId('student_id')->constrained('students', 'student_id');
+            $table->foreignId('skill_id')->constrained('skills', 'skill_id');
+            $table->string('skill_level', 50)->nullable();
+            $table->string('certification', 100)->nullable();
+            $table->date('date_acquired')->nullable();
             $table->timestamps();
         });
     }

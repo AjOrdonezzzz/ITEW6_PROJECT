@@ -9,10 +9,16 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up(): void
+     public function up(): void
     {
         Schema::create('student_organizations', function (Blueprint $table) {
-            $table->id();
+            $table->id('record_id');
+            $table->foreignId('student_id')->constrained('students', 'student_id');
+            $table->foreignId('organization_id')->constrained('organizations', 'organization_id');
+            $table->string('role', 50)->nullable();
+            $table->date('start_date')->nullable();
+            $table->date('end_date')->nullable();
+            $table->string('status', 20);
             $table->timestamps();
         });
     }

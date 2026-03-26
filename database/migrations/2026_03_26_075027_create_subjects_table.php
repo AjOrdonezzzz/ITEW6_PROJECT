@@ -12,10 +12,14 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('subjects', function (Blueprint $table) {
-            $table->id();
+            $table->id('subject_id');
+            $table->string('subject_code', 20)->unique();
+            $table->string('subject_name', 100);
+            $table->foreignId('department_id')->constrained('departments', 'department_id');
             $table->timestamps();
         });
     }
+
 
     /**
      * Reverse the migrations.

@@ -11,8 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('faculties', function (Blueprint $table) {
-            $table->id();
+        Schema::create('faculty', function (Blueprint $table) {
+            $table->id('faculty_id');
+            $table->string('first_name', 50);
+            $table->string('last_name', 50);
+            $table->string('email', 100)->unique();
+            $table->foreignId('department_id')->constrained('departments', 'department_id');
+            $table->string('position', 50);
+            $table->string('expertise', 50);
+            $table->string('status', 20);
             $table->timestamps();
         });
     }

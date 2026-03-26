@@ -12,11 +12,14 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('sections', function (Blueprint $table) {
-            $table->id();
+            $table->id('section_id');
+            $table->string('section_name', 50);
+            $table->integer('year_level');
+            $table->string('school_year', 20);
+            $table->foreignId('adviser_id')->constrained('faculty', 'faculty_id');
             $table->timestamps();
         });
     }
-
     /**
      * Reverse the migrations.
      */

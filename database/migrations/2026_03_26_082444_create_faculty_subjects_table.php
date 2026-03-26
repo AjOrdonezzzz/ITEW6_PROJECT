@@ -12,11 +12,14 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('faculty_subjects', function (Blueprint $table) {
-            $table->id();
+            $table->id('record_id');
+            $table->foreignId('faculty_id')->constrained('faculty', 'faculty_id');
+            $table->foreignId('subject_id')->constrained('subjects', 'subject_id');
+            $table->string('school_year', 20);
+            $table->string('semester', 20);
             $table->timestamps();
         });
     }
-
     /**
      * Reverse the migrations.
      */

@@ -12,7 +12,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('non_academic_activities', function (Blueprint $table) {
-            $table->id();
+            $table->id('activity_id');
+            $table->foreignId('student_id')->constrained('students', 'student_id');
+            $table->string('activity_name', 100);
+            $table->string('category', 50);
+            $table->string('achievement', 100)->nullable();
+            $table->date('activity_date');
             $table->timestamps();
         });
     }
