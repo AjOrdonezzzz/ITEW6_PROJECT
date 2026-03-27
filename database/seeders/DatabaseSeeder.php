@@ -2,24 +2,103 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use App\Models\Department;
+use App\Models\Guardian;
+use App\Models\Faculty;
+use App\Models\Section;
+use App\Models\Student;
+use App\Models\Subject;
+use App\Models\Skill;
+use App\Models\Organization;
+use App\Models\ViolationType;
+use App\Models\StudentSkill;
+use App\Models\StudentViolation;
+use App\Models\StudentSubject;
+use App\Models\AcademicAward;
+use App\Models\StudentOrganization;
+use App\Models\NonAcademicActivity;
+use App\Models\FacultySubject;
+use App\Models\FacultyOrganization;
 
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
-
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        // User::factory(10)->create();
+        Department::factory(3)->create();
+        Guardian::factory(20)->create();
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+        $faculty = Faculty::factory(10)->create();
+        Section::factory(5)->create();
+        $subjects = Subject::factory(8)->create();
+
+        $students = Student::factory(50)->create();
+
+        $skills = Skill::factory(10)->create();
+        $organizations = Organization::factory(5)->create();
+        $violations = ViolationType::factory(5)->create();
+
+        foreach ($students as $student) {
+            $studentSkills = $skills->random(rand(1, 3));
+            foreach ($studentSkills as $skill) {
+                StudentSkill::factory()->create([
+                    'student_id' => $student->student_id,
+                    'skill_id' => $skill->skill_id,
+                ]);
+            }
+
+            $studentSubjects = $subjects->random(rand(3, min(6, $subjects->count())));
+            foreach ($studentSubjects as $subject) {
+                StudentSubject::factory()->create([
+                    'student_id' => $student->student_id,
+                    'subject_id' => $subject->subject_id,
+                    'school_year' => '2024-2025',
+                    'semester' => '1st',
+                ]);
+            }
+
+            $studentOrgs = $organizations->random(rand(0, 2));
+            foreach ($studentOrgs as $org) {
+                StudentOrganization::factory()->create([
+                    'student_id' => $student->student_id,
+                    'organization_id' => $org->organization_id,
+                ]);
+            }
+
+            StudentViolation::factory(rand(0, 2))->create([
+                'student_id' => $student->student_id,
+                'violation_type_id' => $violations->random()->violation_type_id,
+                'status' => 'Pending',
+            ]);
+
+            AcademicAward::factory(rand(0, 1))->create([
+                'student_id' => $student->student_id,
+                'school_year' => '2024-2025',
+            ]);
+
+            NonAcademicActivity::factory(rand(0, 2))->create([
+                'student_id' => $student->student_id,
+            ]);
+        }
+
+        foreach ($faculty as $member) {
+            $facultySubjects = $subjects->random(rand(1, 3));
+            foreach ($facultySubjects as $subject) {
+                FacultySubject::factory()->create([
+                    'faculty_id' => $member->faculty_id,
+                    'subject_id' => $subject->subject_id,
+                    'school_year' => '2024-2025',
+                    'semester' => '1st',
+                ]);
+            }
+
+            $facultyOrgs = $organizations->random(rand(0, 2));
+            foreach ($facultyOrgs as $org) {
+                FacultyOrganization::factory()->create([
+                    'faculty_id' => $member->faculty_id,
+                    'organization_id' => $org->organization_id,
+                ]);
+            }
+        }
     }
 }
