@@ -23,36 +23,116 @@
 
                 <section v-if="showAddForm" class="student-form-card">
                     <div class="form-grid">
-                        <label class="field">
-                            <span>Full name</span>
-                            <input v-model="newStudent.name" type="text" placeholder="Enter student name">
-                        </label>
+                        <div class="field">
+                            <span>First Name <span class="required">*</span></span>
+                            <input v-model="newStudent.first_name" type="text" placeholder="Enter first name">
+                        </div>
 
-                        <label class="field">
-                            <span>Course</span>
-                            <input v-model="newStudent.course" type="text" placeholder="Enter course">
-                        </label>
+                        <div class="field">
+                            <span>Last Name <span class="required">*</span></span>
+                            <input v-model="newStudent.last_name" type="text" placeholder="Enter last name">
+                        </div>
 
-                        <label class="field">
-                            <span>Student number</span>
-                            <input v-model="newStudent.studentNumber" type="text" placeholder="Enter student number">
-                        </label>
+                        <div class="field">
+                            <span>Middle Name</span>
+                            <input v-model="newStudent.middle_name" type="text" placeholder="Enter middle name (optional)">
+                        </div>
 
-                        <label class="field">
-                            <span>Status</span>
+                        <div class="field">
+                            <span>Student Number <span class="required">*</span></span>
+                            <input v-model="newStudent.studentNumber" type="text" placeholder="e.g. 2024-00121">
+                        </div>
+
+                        <div class="field">
+                            <span>Gender <span class="required">*</span></span>
+                            <select v-model="newStudent.gender">
+                                <option value="">Select gender</option>
+                                <option>Male</option>
+                                <option>Female</option>
+                                <option>Other</option>
+                            </select>
+                        </div>
+
+                        <div class="field">
+                            <span>Birthdate <span class="required">*</span></span>
+                            <input v-model="newStudent.birthdate" type="date">
+                        </div>
+
+                        <div class="field">
+                            <span>Civil Status</span>
+                            <select v-model="newStudent.civil_status">
+                                <option value="">Select civil status</option>
+                                <option>Single</option>
+                                <option>Married</option>
+                                <option>Widowed</option>
+                            </select>
+                        </div>
+
+                        <div class="field">
+                            <span>Contact Number</span>
+                            <input v-model="newStudent.contact_number" type="text" placeholder="e.g. 09xxxxxxxxx">
+                        </div>
+
+                        <div class="field">
+                            <span>Email</span>
+                            <input v-model="newStudent.email" type="email" placeholder="Enter email address">
+                        </div>
+
+                        <div class="field">
+                            <span>Status <span class="required">*</span></span>
                             <select v-model="newStudent.status">
                                 <option>Active</option>
-                                <option>Regular</option>
+                                <option>Inactive</option>
                                 <option>Probationary</option>
                             </select>
-                        </label>
+                        </div>
+
+                        <div class="field">
+                            <span>Section Name <span class="required">*</span></span>
+                            <input v-model="newStudent.section_name" type="text" placeholder="e.g. BSIT 3A">
+                        </div>
+
+                        <div class="field">
+                            <span>Year Level <span class="required">*</span></span>
+                            <input v-model="newStudent.year_level" type="number" placeholder="e.g. 3" min="1" max="6">
+                        </div>
+
+                        <div class="field">
+                            <span>School Year <span class="required">*</span></span>
+                            <input v-model="newStudent.school_year" type="text" placeholder="e.g. 2024-2025">
+                        </div>
+                       <!-- Guardian Fields -->
+                        <div class="field">
+                            <span>Guardian First Name <span class="required">*</span></span>
+                            <input v-model="newStudent.guardian_first_name" type="text" placeholder="Enter guardian first name">
+                        </div>
+
+                        <div class="field">
+                            <span>Guardian Last Name <span class="required">*</span></span>
+                            <input v-model="newStudent.guardian_last_name" type="text" placeholder="Enter guardian last name">
+                        </div>
+
+                        <div class="field">
+                            <span>Guardian Email <span class="required">*</span></span>
+                            <input v-model="newStudent.guardian_email" type="email" placeholder="Enter guardian email">
+                        </div>
+
+                        <div class="field">
+                            <span>Guardian Contact Number</span>
+                            <input v-model="newStudent.guardian_contact" type="text" placeholder="e.g. 09xxxxxxxxx">
+                        </div>
+
+                        <div class="field" style="grid-column: span 2;">
+                            <span>Address</span>
+                            <input v-model="newStudent.address" type="text" placeholder="Enter full address">
+                        </div>
                     </div>
 
                     <div class="form-actions">
                         <button class="save-student-btn" @click="addStudent">Save Student</button>
                         <span v-if="studentMessage" class="student-message">{{ studentMessage }}</span>
                     </div>
-                </section>
+        </section>
 
                 <div v-if="filteredStudents.length" class="student-grid">
                     <article class="student-card" v-for="student in filteredStudents" :key="student.id" @click="openStudent(student)">
@@ -78,29 +158,29 @@
                         </div>
 
                         <div class="form-grid">
-                            <label class="field">
+                            <div class="field">
                                 <span>Full name</span>
                                 <input v-model="selectedStudent.name" type="text">
-                            </label>
+                            </div>
 
-                            <label class="field">
+                            <div class="field">
                                 <span>Course</span>
                                 <input v-model="selectedStudent.course" type="text">
-                            </label>
+                            </div>
 
-                            <label class="field">
+                            <div class="field">
                                 <span>Student number</span>
                                 <input v-model="selectedStudent.studentNumber" type="text">
-                            </label>
+                            </div>
 
-                            <label class="field">
+                            <div class="field">
                                 <span>Status</span>
                                 <select v-model="selectedStudent.status">
                                     <option>Active</option>
                                     <option>Regular</option>
                                     <option>Probationary</option>
                                 </select>
-                            </label>
+                            </div>
                         </div>
 
                         <div class="form-actions">
@@ -136,10 +216,25 @@ export default {
             loading: false,
 
             newStudent: {
-                name: '',
-                course: '',
-                studentNumber: '',
-                status: 'Active'
+                first_name:            '',
+                last_name:             '',
+                middle_name:           '',
+                studentNumber:         '',
+                gender:                '',
+                birthdate:             '',
+                civil_status:          '',
+                contact_number:        '',
+                email:                 '',
+                address:               '',
+                status:                'Active',
+                section_name:          '',
+                year_level:            '',
+                school_year:           '',
+                // Guardian fields
+                guardian_first_name:   '',
+                guardian_last_name:    '',
+                guardian_email:        '',
+                guardian_contact:      '',
             },
 
             students: []
@@ -172,12 +267,9 @@ export default {
                 .join('');
         },
 
-        // Map API student shape → template shape
         mapStudent(s) {
-            const fullName = [s.first_name, s.middle_name ? s.middle_name[0] + '.' : '', s.last_name]
-                .filter(Boolean)
-                .join(' ');
-
+            const fullName = [s.first_name, s.middle_name ?? '', s.last_name]
+                .filter(Boolean).join(' ');
             return {
                 id:            s.student_id,
                 name:          fullName,
@@ -185,8 +277,7 @@ export default {
                 studentNumber: s.student_number,
                 status:        s.status,
                 initials:      this.getInitials(fullName),
-                // keep raw fields for update
-                _raw: s,
+                _raw:          s,
             };
         },
 
@@ -203,43 +294,97 @@ export default {
             }
         },
 
+        resetForm() {
+            this.newStudent = {
+                first_name: '', last_name: '', middle_name: '',
+                studentNumber: '', gender: '', birthdate: '',
+                civil_status: '', contact_number: '', email: '',
+                address: '', status: 'Active',
+                section_name: '', year_level: '', school_year: '',
+                guardian_first_name: '', guardian_last_name: '',
+                guardian_email: '', guardian_contact: '',
+            };
+        },
+
         // POST /api/v1/students
         async addStudent() {
-            const { name, course, studentNumber, status } = this.newStudent;
+            const {
+                first_name, last_name, middle_name,
+                studentNumber, gender, birthdate,
+                civil_status, contact_number, email,
+                address, status, section_name,
+                year_level, school_year,
+                guardian_first_name, guardian_last_name,
+                guardian_email, guardian_contact,
+            } = this.newStudent;
 
-            if (!name.trim() || !course.trim() || !studentNumber.trim()) {
-                this.studentMessage = 'Please complete all student fields.';
+            // Validate required fields
+            const missing = [];
+            if (!first_name.trim())           missing.push('First Name');
+            if (!last_name.trim())            missing.push('Last Name');
+            if (!studentNumber.trim())        missing.push('Student Number');
+            if (!gender)                      missing.push('Gender');
+            if (!birthdate)                   missing.push('Birthdate');
+            if (!section_name.trim())         missing.push('Section Name');
+            if (!year_level)                  missing.push('Year Level');
+            if (!school_year.trim())          missing.push('School Year');
+            if (!guardian_first_name.trim())  missing.push('Guardian First Name');
+            if (!guardian_last_name.trim())   missing.push('Guardian Last Name');
+            if (!guardian_email.trim())       missing.push('Guardian Email');
+
+            if (missing.length) {
+                this.studentMessage = `Missing: ${missing.join(', ')}`;
                 return;
             }
 
-            // Split name into parts: first last (middle optional)
-            const nameParts  = name.trim().split(' ').filter(Boolean);
-            const first_name = nameParts[0] ?? '';
-            const last_name  = nameParts[nameParts.length - 1] ?? '';
-            const middle_name = nameParts.length > 2 ? nameParts.slice(1, -1).join(' ') : null;
-
             try {
+                // Step 1: Create Guardian
+                const guardianRes = await api.post('/guardians', {
+                    first_name:     guardian_first_name.trim(),
+                    last_name:      guardian_last_name.trim(),
+                    email:          guardian_email.trim(),
+                    contact_number: guardian_contact.trim() || null,
+                });
+
+                // Step 2: Create Section
+                const sectionRes = await api.post('/sections', {
+                    section_name: section_name.trim(),
+                    year_level:   parseInt(year_level),
+                    school_year:  school_year.trim(),
+                    adviser_id:   1,
+                });
+
+                // Step 3: Create Student linked to guardian + section
                 const { data } = await api.post('/students', {
-                    student_number: studentNumber.trim(),
-                    first_name,
-                    last_name,
-                    middle_name,
-                    gender:      'N/A',   // update form if you add gender field
-                    birthdate:   '2000-01-01', // update form if you add birthdate field
-                    section_id:  1,       // update if you add section dropdown
-                    guardian_id: 1,       // update if you add guardian dropdown
+                    student_number:  studentNumber.trim(),
+                    first_name:      first_name.trim(),
+                    last_name:       last_name.trim(),
+                    middle_name:     middle_name.trim() || null,
+                    gender,
+                    birthdate,
+                    civil_status:    civil_status || null,
+                    contact_number:  contact_number.trim() || null,
+                    email:           email.trim() || null,
+                    address:         address.trim() || null,
                     status,
+                    section_id:      sectionRes.data.section_id,
+                    guardian_id:     guardianRes.data.guardian_id,
                 });
 
                 this.students.unshift(this.mapStudent(data));
+                this.resetForm();
 
-                this.newStudent = { name: '', course: '', studentNumber: '', status: 'Active' };
                 this.studentMessage = 'Student added successfully.';
                 setTimeout(() => { this.studentMessage = ''; }, 2000);
 
             } catch (err) {
                 console.error('Failed to add student:', err);
-                this.studentMessage = err.response?.data?.message ?? 'Failed to add student.';
+                const errors = err.response?.data?.errors;
+                if (errors) {
+                    this.studentMessage = Object.values(errors).flat().join(' | ');
+                } else {
+                    this.studentMessage = err.response?.data?.message ?? 'Failed to add student.';
+                }
             }
         },
 
@@ -255,18 +400,14 @@ export default {
 
         // PUT /api/v1/students/{id}
         async updateStudent() {
-            if (
-                !this.selectedStudent.name.trim() ||
-                !this.selectedStudent.course.trim() ||
-                !this.selectedStudent.studentNumber.trim()
-            ) {
-                this.editMessage = 'Please complete all student fields.';
+            if (!this.selectedStudent.name.trim() || !this.selectedStudent.studentNumber.trim()) {
+                this.editMessage = 'Please complete all required fields.';
                 return;
             }
 
-            const nameParts  = this.selectedStudent.name.trim().split(' ').filter(Boolean);
-            const first_name = nameParts[0] ?? '';
-            const last_name  = nameParts[nameParts.length - 1] ?? '';
+            const nameParts   = this.selectedStudent.name.trim().split(' ').filter(Boolean);
+            const first_name  = nameParts[0] ?? '';
+            const last_name   = nameParts[nameParts.length - 1] ?? '';
             const middle_name = nameParts.length > 2 ? nameParts.slice(1, -1).join(' ') : null;
 
             try {
@@ -278,7 +419,6 @@ export default {
                     status: this.selectedStudent.status,
                 });
 
-                // Update in local list
                 const index = this.students.findIndex((s) => s.id === this.selectedStudent.id);
                 if (index !== -1) this.students[index] = this.mapStudent(data);
 
@@ -287,21 +427,23 @@ export default {
 
             } catch (err) {
                 console.error('Failed to update student:', err);
-                this.editMessage = err.response?.data?.message ?? 'Failed to update student.';
+                const errors = err.response?.data?.errors;
+                if (errors) {
+                    this.editMessage = Object.values(errors).flat().join(' | ');
+                } else {
+                    this.editMessage = err.response?.data?.message ?? 'Failed to update student.';
+                }
             }
         },
 
         // DELETE /api/v1/students/{id}
         async deleteStudent() {
             if (!this.selectedStudent) return;
-
             try {
                 await api.delete(`/students/${this.selectedStudent.id}`);
-
                 this.students = this.students.filter((s) => s.id !== this.selectedStudent.id);
                 this.editMessage = 'Student deleted successfully.';
                 setTimeout(() => { this.closeStudent(); }, 800);
-
             } catch (err) {
                 console.error('Failed to delete student:', err);
                 this.editMessage = err.response?.data?.message ?? 'Failed to delete student.';
@@ -317,6 +459,60 @@ export default {
 </script>
 
 <style scoped>
+.required {
+    color: #ef4444;
+}
+
+.guardian-results {
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    margin-top: 4px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    background: white;
+    z-index: 10;
+}
+
+.guardian-result-item {
+    padding: 10px 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 14px;
+    transition: background 0.15s ease;
+}
+
+.guardian-result-item:hover {
+    background: #fef3c7;
+}
+
+.guardian-email {
+    font-size: 12px;
+    color: #9ca3af;
+}
+
+.guardian-selected {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: #d1fae5;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #065f46;
+}
+
+.clear-guardian {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    color: #065f46;
+    margin-left: auto;
+}
 .students-layout {
     display: flex;
     min-height: 100vh;
