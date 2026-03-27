@@ -118,36 +118,12 @@
 <script>
 import AppHeader from '../components/AppHeader.vue';
 import Sidebar from '../components/Sidebar.vue';
-
-const DEFAULT_STUDENTS = [
-    { id: 1, name: 'Joana Marie Lumogda', course: 'BS Information Technology', studentNumber: '2024-00121', status: 'Active', initials: 'JL' },
-    { id: 2, name: 'Nicoli B. Alonso', course: 'BS Computer Science', studentNumber: '2024-00122', status: 'Active', initials: 'NA' },
-    { id: 3, name: 'Aira Dela Cruz', course: 'BS Information Systems', studentNumber: '2024-00123', status: 'Regular', initials: 'AD' },
-    { id: 4, name: 'Marco Reyes', course: 'BS Information Technology', studentNumber: '2024-00124', status: 'Probationary', initials: 'MR' },
-    { id: 5, name: 'Leah Santos', course: 'BS Computer Science', studentNumber: '2024-00125', status: 'Active', initials: 'LS' },
-    { id: 6, name: 'Paolo Fernandez', course: 'BS Information Technology', studentNumber: '2024-00126', status: 'Regular', initials: 'PF' },
-    { id: 7, name: 'Denise Mercado', course: 'BS Information Systems', studentNumber: '2024-00127', status: 'Active', initials: 'DM' },
-    { id: 8, name: 'Ralph Mendoza', course: 'BS Computer Science', studentNumber: '2024-00128', status: 'Active', initials: 'RM' },
-    { id: 9, name: 'Angela Robles', course: 'BS Information Technology', studentNumber: '2024-00129', status: 'Regular', initials: 'AR' },
-    { id: 10, name: 'Jared Villanueva', course: 'BS Information Systems', studentNumber: '2024-00130', status: 'Probationary', initials: 'JV' },
-    { id: 11, name: 'Trisha Gomez', course: 'BS Computer Science', studentNumber: '2024-00131', status: 'Active', initials: 'TG' },
-    { id: 12, name: 'Ethan Cruz', course: 'BS Information Technology', studentNumber: '2024-00132', status: 'Active', initials: 'EC' },
-    { id: 13, name: 'Camille Navarro', course: 'BS Information Systems', studentNumber: '2024-00133', status: 'Regular', initials: 'CN' },
-    { id: 14, name: 'Bryan Dizon', course: 'BS Computer Science', studentNumber: '2024-00134', status: 'Active', initials: 'BD' },
-    { id: 15, name: 'Mikaela Torres', course: 'BS Information Technology', studentNumber: '2024-00135', status: 'Active', initials: 'MT' },
-    { id: 16, name: 'Sean Bautista', course: 'BS Information Systems', studentNumber: '2024-00136', status: 'Regular', initials: 'SB' },
-    { id: 17, name: 'Patricia Lim', course: 'BS Computer Science', studentNumber: '2024-00137', status: 'Active', initials: 'PL' },
-    { id: 18, name: 'Harvey Garcia', course: 'BS Information Technology', studentNumber: '2024-00138', status: 'Probationary', initials: 'HG' },
-    { id: 19, name: 'Nicole Aquino', course: 'BS Information Systems', studentNumber: '2024-00139', status: 'Active', initials: 'NA' },
-    { id: 20, name: 'Vincent Ramos', course: 'BS Computer Science', studentNumber: '2024-00140', status: 'Regular', initials: 'VR' }
-];
+import api from '../services/api.js';
 
 export default {
     name: 'StudentsPage',
-    components: {
-        AppHeader,
-        Sidebar
-    },
+    components: { AppHeader, Sidebar },
+
     data() {
         return {
             sidebarOpen: true,
@@ -157,20 +133,36 @@ export default {
             editMessage: '',
             selectedStudent: null,
             searchQuery: '',
+            loading: false,
+
             newStudent: {
                 name: '',
                 course: '',
                 studentNumber: '',
                 status: 'Active'
             },
-            students: [...DEFAULT_STUDENTS]
+
+            students: []
         };
     },
+
+    computed: {
+        filteredStudents() {
+            const query = this.searchQuery.trim().toLowerCase();
+            if (!query) return this.students;
+            return this.students.filter((student) =>
+                [student.name, student.course, student.studentNumber, student.status]
+                    .some((value) => String(value).toLowerCase().includes(query))
+            );
+        }
+    },
+
     methods: {
         getFormattedDate() {
             const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
             return new Date().toLocaleDateString('en-US', options);
         },
+
         getInitials(name) {
             return name
                 .split(' ')
@@ -179,19 +171,40 @@ export default {
                 .map((part) => part[0]?.toUpperCase() || '')
                 .join('');
         },
-        saveStudents() {
-            localStorage.setItem('studentsData', JSON.stringify(this.students));
-        },
-        loadStudents() {
-            const savedStudents = JSON.parse(localStorage.getItem('studentsData') || 'null');
-            if (savedStudents && Array.isArray(savedStudents) && savedStudents.length) {
-                this.students = savedStudents;
-                return;
-            }
 
-            this.students = [...DEFAULT_STUDENTS];
+        // Map API student shape → template shape
+        mapStudent(s) {
+            const fullName = [s.first_name, s.middle_name ? s.middle_name[0] + '.' : '', s.last_name]
+                .filter(Boolean)
+                .join(' ');
+
+            return {
+                id:            s.student_id,
+                name:          fullName,
+                course:        s.section?.section_name ?? 'N/A',
+                studentNumber: s.student_number,
+                status:        s.status,
+                initials:      this.getInitials(fullName),
+                // keep raw fields for update
+                _raw: s,
+            };
         },
-        addStudent() {
+
+        // GET /api/v1/students
+        async fetchStudents() {
+            this.loading = true;
+            try {
+                const { data } = await api.get('/students');
+                this.students = data.map(this.mapStudent);
+            } catch (err) {
+                console.error('Failed to load students:', err);
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        // POST /api/v1/students
+        async addStudent() {
             const { name, course, studentNumber, status } = this.newStudent;
 
             if (!name.trim() || !course.trim() || !studentNumber.trim()) {
@@ -199,91 +212,106 @@ export default {
                 return;
             }
 
-            this.students.unshift({
-                id: Date.now(),
-                name: name.trim(),
-                course: course.trim(),
-                studentNumber: studentNumber.trim(),
-                status,
-                initials: this.getInitials(name.trim())
-            });
-            this.saveStudents();
+            // Split name into parts: first last (middle optional)
+            const nameParts  = name.trim().split(' ').filter(Boolean);
+            const first_name = nameParts[0] ?? '';
+            const last_name  = nameParts[nameParts.length - 1] ?? '';
+            const middle_name = nameParts.length > 2 ? nameParts.slice(1, -1).join(' ') : null;
 
-            this.newStudent = {
-                name: '',
-                course: '',
-                studentNumber: '',
-                status: 'Active'
-            };
+            try {
+                const { data } = await api.post('/students', {
+                    student_number: studentNumber.trim(),
+                    first_name,
+                    last_name,
+                    middle_name,
+                    gender:      'N/A',   // update form if you add gender field
+                    birthdate:   '2000-01-01', // update form if you add birthdate field
+                    section_id:  1,       // update if you add section dropdown
+                    guardian_id: 1,       // update if you add guardian dropdown
+                    status,
+                });
 
-            this.studentMessage = 'Student added successfully.';
+                this.students.unshift(this.mapStudent(data));
 
-            setTimeout(() => {
-                this.studentMessage = '';
-            }, 2000);
+                this.newStudent = { name: '', course: '', studentNumber: '', status: 'Active' };
+                this.studentMessage = 'Student added successfully.';
+                setTimeout(() => { this.studentMessage = ''; }, 2000);
+
+            } catch (err) {
+                console.error('Failed to add student:', err);
+                this.studentMessage = err.response?.data?.message ?? 'Failed to add student.';
+            }
         },
+
         openStudent(student) {
             this.selectedStudent = { ...student };
             this.editMessage = '';
         },
+
         closeStudent() {
             this.selectedStudent = null;
             this.editMessage = '';
         },
-        updateStudent() {
-            if (!this.selectedStudent.name.trim() || !this.selectedStudent.course.trim() || !this.selectedStudent.studentNumber.trim()) {
+
+        // PUT /api/v1/students/{id}
+        async updateStudent() {
+            if (
+                !this.selectedStudent.name.trim() ||
+                !this.selectedStudent.course.trim() ||
+                !this.selectedStudent.studentNumber.trim()
+            ) {
                 this.editMessage = 'Please complete all student fields.';
                 return;
             }
 
-            const index = this.students.findIndex((student) => student.id === this.selectedStudent.id);
-            if (index === -1) return;
+            const nameParts  = this.selectedStudent.name.trim().split(' ').filter(Boolean);
+            const first_name = nameParts[0] ?? '';
+            const last_name  = nameParts[nameParts.length - 1] ?? '';
+            const middle_name = nameParts.length > 2 ? nameParts.slice(1, -1).join(' ') : null;
 
-            this.students[index] = {
-                ...this.selectedStudent,
-                name: this.selectedStudent.name.trim(),
-                course: this.selectedStudent.course.trim(),
-                studentNumber: this.selectedStudent.studentNumber.trim(),
-                initials: this.getInitials(this.selectedStudent.name.trim())
-            };
-            this.saveStudents();
+            try {
+                const { data } = await api.put(`/students/${this.selectedStudent.id}`, {
+                    student_number: this.selectedStudent.studentNumber.trim(),
+                    first_name,
+                    last_name,
+                    middle_name,
+                    status: this.selectedStudent.status,
+                });
 
-            this.editMessage = 'Student updated successfully.';
+                // Update in local list
+                const index = this.students.findIndex((s) => s.id === this.selectedStudent.id);
+                if (index !== -1) this.students[index] = this.mapStudent(data);
 
-            setTimeout(() => {
-                this.closeStudent();
-            }, 1000);
+                this.editMessage = 'Student updated successfully.';
+                setTimeout(() => { this.closeStudent(); }, 1000);
+
+            } catch (err) {
+                console.error('Failed to update student:', err);
+                this.editMessage = err.response?.data?.message ?? 'Failed to update student.';
+            }
         },
-        deleteStudent() {
+
+        // DELETE /api/v1/students/{id}
+        async deleteStudent() {
             if (!this.selectedStudent) return;
 
-            this.students = this.students.filter((student) => student.id !== this.selectedStudent.id);
-            this.saveStudents();
-            this.editMessage = 'Student deleted successfully.';
+            try {
+                await api.delete(`/students/${this.selectedStudent.id}`);
 
-            setTimeout(() => {
-                this.closeStudent();
-            }, 800);
-        }
-    },
-    computed: {
-        filteredStudents() {
-            const query = this.searchQuery.trim().toLowerCase();
-            if (!query) return this.students;
+                this.students = this.students.filter((s) => s.id !== this.selectedStudent.id);
+                this.editMessage = 'Student deleted successfully.';
+                setTimeout(() => { this.closeStudent(); }, 800);
 
-            return this.students.filter((student) => {
-                return [
-                    student.name,
-                    student.course,
-                    student.studentNumber,
-                    student.status
-                ].some((value) => String(value).toLowerCase().includes(query));
-            });
-        }
+            } catch (err) {
+                console.error('Failed to delete student:', err);
+                this.editMessage = err.response?.data?.message ?? 'Failed to delete student.';
+            }
+        },
     },
+
     mounted() {
         this.currentDate = this.getFormattedDate();
-        this.loadStudents();
+        this.fetchStudents();
     }
 };
 </script>
