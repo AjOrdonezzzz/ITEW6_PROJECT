@@ -59,7 +59,9 @@
         </div>
 
         <div class="login-right">
-            <img src="https://via.placeholder.com/280/cccccc/cccccc?text=Logo" alt="Logo" class="logo-circle">
+            <div class="logo-circle">
+                <img src="/images/ccs-logo.jpg" alt="CCS Logo" class="logo-image">
+            </div>
         </div>
     </div>
 </template>
@@ -402,8 +404,21 @@ body {
     width: 280px;
     height: 280px;
     border-radius: 50%;
-    object-fit: cover;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at 30% 30%, rgba(255, 188, 92, 0.25), rgba(74, 31, 0, 0.1));
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25), 0 0 0 26px rgba(255, 255, 255, 0.03);
+    overflow: hidden;
+}
+
+.logo-image {
+    width: 86%;
+    height: 86%;
+    object-fit: contain;
+    border-radius: 50%;
+    opacity: 0.94;
+    filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.18));
 }
 
 @media (max-width: 1024px) {

@@ -15,7 +15,26 @@
 
                 <div v-if="filteredStats.length" class="stats-grid">
                     <div v-for="stat in filteredStats" :key="stat.title" class="stat-card">
-                        <div class="stat-icon">{{ stat.icon }}</div>
+                        <div class="stat-icon">
+                            <svg v-if="stat.icon === 'students'" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M16 19a4 4 0 0 0-8 0" />
+                                <circle cx="12" cy="9" r="3" />
+                                <path d="M5 19a3 3 0 0 1 3-3" />
+                                <circle cx="6" cy="10" r="2" />
+                                <path d="M19 19a3 3 0 0 0-3-3" />
+                                <circle cx="18" cy="10" r="2" />
+                            </svg>
+                            <svg v-else-if="stat.icon === 'shield'" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M12 3 5 6v6c0 5 3.5 7.5 7 9 3.5-1.5 7-4 7-9V6l-7-3Z" />
+                                <path d="m9.5 12 1.8 1.8 3.7-4.3" />
+                            </svg>
+                            <svg v-else viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M4 19V9" />
+                                <path d="M10 19V5" />
+                                <path d="M16 19v-7" />
+                                <path d="M22 19V3" />
+                            </svg>
+                        </div>
                         <div class="stat-info">
                             <h3>{{ stat.title }}</h3>
                             <p class="stat-number">{{ stat.value }}</p>
@@ -106,6 +125,22 @@ export default {
     },
 
     computed: {
+        statsList() {
+            const totalStudents = this.studentsData.length;
+            const activeProfiles = this.studentsData.filter((student) => student.status === 'Active').length;
+            const ages = this.studentsData
+                .map((student) => Number(student.age))
+                .filter((age) => Number.isFinite(age) && age > 0);
+            const averageAge = ages.length
+                ? Math.round(ages.reduce((sum, age) => sum + age, 0) / ages.length)
+                : '--';
+
+            return [
+                { title: 'Total Students', value: String(totalStudents), icon: 'students' },
+                { title: 'Active Profiles', value: String(activeProfiles), icon: 'shield' },
+                { title: 'Average Age', value: String(averageAge), icon: 'chart' }
+            ];
+        },
         filteredStats() {
             const query = this.searchQuery.trim().toLowerCase();
             if (!query) return this.stats;
@@ -151,75 +186,6 @@ export default {
             };
             return new Date().toLocaleDateString('en-US', options);
         },
-
-        formatDate(dateStr) {
-            if (!dateStr) return 'N/A';
-            return new Date(dateStr).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-            });
-        },
-
-        // Fetch stat cards from /api/v1/dashboard/stats
-        async fetchStats() {
-            this.statsLoading = true;
-            try {
-                const { data } = await api.get('/dashboard/stats');
-                this.stats = [
-                    {
-                        title: 'Total Students',
-                        value: Number(data.total_students).toLocaleString(),
-                        icon: '👥',
-                    },
-                    {
-                        title: 'Active Profiles',
-                        value: Number(data.active_profiles).toLocaleString(),
-                        icon: '✅',
-                    },
-                    {
-                        title: 'Average Age',
-                        value: data.average_age,
-                        icon: '📊',
-                    },
-                ];
-            } catch (err) {
-                console.error('Failed to load stats:', err);
-                // Fallback so cards are not empty if API is down
-                this.stats = [
-                    { title: 'Total Students',  value: '—', icon: '👥' },
-                    { title: 'Active Profiles', value: '—', icon: '✅' },
-                    { title: 'Average Age',     value: '—', icon: '📊' },
-                ];
-            } finally {
-                this.statsLoading = false;
-            }
-        },
-
-        // Fetch violations from /api/v1/student-violations
-        async fetchViolations() {
-            this.violationsLoading = true;
-            try {
-                const { data } = await api.get('/student-violations');
-
-                // Map API response to match the shape the template already uses
-                this.violationStudents = data.map((v) => ({
-                    id:        v.violation_id,
-                    name:      `${v.student.first_name} ${v.student.middle_name ? v.student.middle_name[0] + '. ' : ''}${v.student.last_name}`,
-                    number:    v.student.student_number,
-                    date:      this.formatDate(v.violation_date),
-                    status:    v.status,
-                    violation: v.violationType?.violation_name + (v.description ? ` — ${v.description}` : ''),
-                }));
-            } catch (err) {
-                console.error('Failed to load violations:', err);
-                this.violationStudents = [];
-            } finally {
-                this.violationsLoading = false;
-            }
-        },
-    },
-
     mounted() {
         this.currentDate = this.getFormattedDate();
         this.fetchStats();
@@ -246,13 +212,10 @@ export default {
     flex: 1;
     display: flex;
     flex-direction: column;
-    overflow-y: auto;
 }
 
 .dashboard-content {
-    flex: 1;
     padding: 40px;
-    overflow-y: auto;
 }
 
 .dashboard-title {
@@ -296,7 +259,6 @@ export default {
 }
 
 .stat-icon {
-    font-size: 40px;
     width: 60px;
     height: 60px;
     display: flex;
@@ -304,6 +266,16 @@ export default {
     justify-content: center;
     background: rgba(255, 107, 53, 0.1);
     border-radius: 12px;
+}
+
+.stat-icon svg {
+    width: 30px;
+    height: 30px;
+    stroke: #8a5a20;
+    stroke-width: 1.9;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
 }
 
 .stat-info h3 {

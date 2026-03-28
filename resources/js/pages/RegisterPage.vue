@@ -72,10 +72,8 @@
         </div>
 
         <div class="auth-right">
-            <div class="hero-circle"></div>
-            <div class="hero-copy">
-                <p class="eyebrow">CCS Department</p>
-                <h2>Build your student account and start exploring the dashboard.</h2>
+            <div class="hero-circle">
+                <img src="/images/ccs-logo.jpg" alt="CCS Logo" class="hero-logo">
             </div>
         </div>
     </div>
@@ -168,9 +166,10 @@ export default {
 }
 
 .auth-page {
-    min-height: 100vh;
     display: grid;
-    grid-template-columns: 1.05fr 0.95fr;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+    min-height: 100vh;
     background: linear-gradient(135deg, #b27722 0%, #7a3902 45%, #211000 100%);
     font-family: 'Poppins', sans-serif;
 }
@@ -179,15 +178,16 @@ export default {
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    padding: 40px 60px 40px 20px;
+    padding-right: 60px;
 }
 
 .auth-card {
-    width: min(430px, 100%);
-    background: rgba(255, 255, 255, 0.96);
-    border-radius: 24px;
-    padding: 42px;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+    background: white;
+    border-radius: 20px;
+    padding: 50px;
+    width: 70vh;
+    min-height: 80vh;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
 }
 
 .auth-card h1 {
@@ -300,41 +300,47 @@ export default {
 }
 
 .auth-right {
-    position: relative;
     display: flex;
-    flex-direction: column;
+    align-items: center;
     justify-content: center;
-    padding: 60px;
-    color: white;
-    overflow: hidden;
 }
 
 .hero-circle {
-    position: absolute;
-    right: 80px;
-    width: 320px;
-    height: 320px;
+    width: 280px;
+    height: 280px;
     border-radius: 50%;
-    background: radial-gradient(circle at 30% 30%, rgba(255, 188, 92, 0.35), rgba(74, 31, 0, 0.08));
-    box-shadow: 0 0 0 30px rgba(255, 255, 255, 0.03);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at 30% 30%, rgba(255, 188, 92, 0.25), rgba(74, 31, 0, 0.1));
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25), 0 0 0 26px rgba(255, 255, 255, 0.03);
+    overflow: hidden;
 }
 
-.hero-copy {
-    position: relative;
-    max-width: 360px;
+.hero-logo {
+    width: 86%;
+    height: 86%;
+    object-fit: contain;
+    border-radius: 50%;
+    opacity: 0.95;
+    filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.2));
 }
 
-.eyebrow {
-    margin-bottom: 14px;
-    font-size: 13px;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    opacity: 0.7;
-}
+@media (max-width: 1024px) {
+    .auth-left {
+        padding-right: 40px;
+    }
 
-.hero-copy h2 {
-    font-size: 38px;
-    line-height: 1.15;
+    .auth-card {
+        width: 300px;
+        padding: 45px;
+        min-height: auto;
+    }
+
+    .hero-circle {
+        width: 250px;
+        height: 250px;
+    }
 }
 
 @media (max-width: 900px) {
@@ -343,8 +349,8 @@ export default {
     }
 
     .auth-left {
+        padding-right: 0;
         justify-content: center;
-        padding: 24px;
     }
 
     .auth-right {
