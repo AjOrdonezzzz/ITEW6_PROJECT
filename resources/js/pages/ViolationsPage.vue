@@ -128,7 +128,7 @@ export default {
             selectedRecord: null,
             editMessage: '',
             records: [
-                { id: 1, name: 'Nicoli B. Alonso', studentNumber: '2024-00122', violation: 'Talking during class', date: 'Mar 31, 2026', status: 'Active' },
+                { id: 1, name: 'Nicoli B. Alonso', studentNumber: '2024-00122', violation: 'JABOLING IN  class', date: 'Mar 31, 2026', status: 'Active' },
                 { id: 2, name: 'Aira Dela Cruz', studentNumber: '2024-00123', violation: 'Late submission of report', date: 'Mar 29, 2026', status: 'Pending' },
                 { id: 3, name: 'Marco Reyes', studentNumber: '2024-00124', violation: 'Dress code violation', date: 'Mar 28, 2026', status: 'Resolved' },
                 { id: 4, name: 'Joana Marie Lumogda', studentNumber: '2024-00121', violation: 'Library noise complaint', date: 'Mar 27, 2026', status: 'Active' }

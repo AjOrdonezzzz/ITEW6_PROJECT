@@ -93,60 +93,37 @@
 <script>
 import AppHeader from '../components/AppHeader.vue';
 import Sidebar from '../components/Sidebar.vue';
+import api from '../services/api.js';
 
 export default {
     name: 'DashboardPage',
-    components: {
-        AppHeader,
-        Sidebar
-    },
+    components: { AppHeader, Sidebar },
+
     data() {
         return {
             sidebarOpen: true,
             currentDate: '',
             searchQuery: '',
-            studentsData: [],
-            violationStudents: [
-                {
-                    id: 1,
-                    name: 'Nicoli B. Alonso',
-                    number: '12312312323',
-                    date: 'Mar 31, 2026',
-                    status: 'Active',
-                    violation: 'Nagsalita sa loob ng room'
-                },
-                {
-                    id: 2,
-                    name: 'Aira Dela Cruz',
-                    number: '2024-00123',
-                    date: 'Mar 29, 2026',
-                    status: 'Pending',
-                    violation: 'Late submission of report'
-                },
-                {
-                    id: 3,
-                    name: 'Marco Reyes',
-                    number: '2024-00124',
-                    date: 'Mar 28, 2026',
-                    status: 'Resolved',
-                    violation: 'Dress code violation'
-                },
-                {
-                    id: 4,
-                    name: 'Joana Marie Lumogda',
-                    number: '2024-00121',
-                    date: 'Mar 27, 2026',
-                    status: 'Active',
-                    violation: 'Library noise complaint'
-                }
-            ],
+
+            // Loading states
+            statsLoading: false,
+            violationsLoading: false,
+
+            // Stats - fetched from API
+            stats: [],
+
+            // Violations - fetched from API
+            violationStudents: [],
+
+            // Events - static until events table is built
             upcomingEvents: [
                 { id: 1, title: 'Student Orientation', date: 'Apr 3, 2026', location: 'Main Hall' },
-                { id: 2, title: 'Hackathon Kickoff', date: 'Apr 8, 2026', location: 'Lab 2' },
-                { id: 3, title: 'Department Assembly', date: 'Apr 20, 2026', location: 'Auditorium' }
-            ]
+                { id: 2, title: 'Hackathon Kickoff',   date: 'Apr 8, 2026', location: 'Lab 2' },
+                { id: 3, title: 'Department Assembly', date: 'Apr 20, 2026', location: 'Auditorium' },
+            ],
         };
     },
+
     computed: {
         statsList() {
             const totalStudents = this.studentsData.length;
@@ -166,49 +143,54 @@ export default {
         },
         filteredStats() {
             const query = this.searchQuery.trim().toLowerCase();
-            if (!query) return this.statsList;
-
-            return this.statsList.filter((stat) => {
-                return [stat.title, stat.value].some((value) => String(value).toLowerCase().includes(query));
-            });
+            if (!query) return this.stats;
+            return this.stats.filter((stat) =>
+                [stat.title, String(stat.value)].some((v) =>
+                    v.toLowerCase().includes(query)
+                )
+            );
         },
+
         filteredViolationStudents() {
             const query = this.searchQuery.trim().toLowerCase();
             if (!query) return this.violationStudents;
-
-            return this.violationStudents.filter((student) => {
-                return [student.name, student.number, student.date, student.status, student.violation]
-                    .some((value) => String(value).toLowerCase().includes(query));
-            });
+            return this.violationStudents.filter((v) =>
+                [
+                    v.name,
+                    v.number,
+                    v.date,
+                    v.status,
+                    v.violation,
+                ].some((val) => String(val ?? '').toLowerCase().includes(query))
+            );
         },
+
         filteredUpcomingEvents() {
             const query = this.searchQuery.trim().toLowerCase();
             if (!query) return this.upcomingEvents;
-
-            return this.upcomingEvents.filter((event) => {
-                return [event.title, event.date, event.location]
-                    .some((value) => String(value).toLowerCase().includes(query));
-            });
-        }
+            return this.upcomingEvents.filter((event) =>
+                [event.title, event.date, event.location].some((v) =>
+                    v.toLowerCase().includes(query)
+                )
+            );
+        },
     },
+
     methods: {
         getFormattedDate() {
-            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const options = {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+            };
             return new Date().toLocaleDateString('en-US', options);
         },
-        loadStudents() {
-            const savedStudents = JSON.parse(localStorage.getItem('studentsData') || 'null');
-            if (savedStudents && Array.isArray(savedStudents)) {
-                this.studentsData = savedStudents;
-                return;
-            }
-            this.studentsData = [];
-        }
-    },
     mounted() {
         this.currentDate = this.getFormattedDate();
-        this.loadStudents();
-    }
+        this.fetchStats();
+        this.fetchViolations();
+    },
 };
 </script>
 
