@@ -16,8 +16,10 @@ return new class extends Migration
             $table->string('section_name', 50);
             $table->integer('year_level');
             $table->string('school_year', 20);
-            $table->foreignId('adviser_id')->constrained('faculty', 'faculty_id');
+            $table->unsignedBigInteger('adviser_id')->nullable();
             $table->timestamps();
+
+            $table->foreign('adviser_id')->references('faculty_id')->on('faculty')->onDelete('set null');
         });
     }
     /**

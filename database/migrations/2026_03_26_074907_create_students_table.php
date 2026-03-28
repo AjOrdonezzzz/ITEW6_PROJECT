@@ -23,13 +23,15 @@ return new class extends Migration
             $table->string('contact_number', 20)->nullable();
             $table->string('email', 100)->nullable();
             $table->text('address')->nullable();
-            $table->foreignId('section_id')->constrained('sections', 'section_id');
+            $table->unsignedBigInteger('section_id');
             $table->string('status', 20);
-            $table->foreignId('guardian_id')->constrained('guardians', 'guardian_id');
+            $table->unsignedBigInteger('guardian_id');
             $table->timestamps();
+
+            $table->foreign('section_id')->references('section_id')->on('sections')->onDelete('cascade');
+            $table->foreign('guardian_id')->references('guardian_id')->on('guardians')->onDelete('cascade');
         });
     }
-
     /**
      * Reverse the migrations.
      */

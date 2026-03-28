@@ -13,11 +13,14 @@ return new class extends Migration
     {
         Schema::create('faculty_subjects', function (Blueprint $table) {
             $table->id('record_id');
-            $table->foreignId('faculty_id')->constrained('faculty', 'faculty_id');
-            $table->foreignId('subject_id')->constrained('subjects', 'subject_id');
+            $table->unsignedBigInteger('faculty_id');
+            $table->unsignedBigInteger('subject_id');
             $table->string('school_year', 20);
             $table->string('semester', 20);
             $table->timestamps();
+
+            $table->foreign('faculty_id')->references('faculty_id')->on('faculty')->onDelete('cascade');
+            $table->foreign('subject_id')->references('subject_id')->on('subjects')->onDelete('cascade');
         });
     }
     /**

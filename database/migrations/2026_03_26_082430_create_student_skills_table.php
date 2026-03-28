@@ -13,12 +13,15 @@ return new class extends Migration
     {
         Schema::create('student_skills', function (Blueprint $table) {
             $table->id('record_id');
-            $table->foreignId('student_id')->constrained('students', 'student_id');
-            $table->foreignId('skill_id')->constrained('skills', 'skill_id');
+            $table->unsignedBigInteger('student_id');
+            $table->unsignedBigInteger('skill_id');
             $table->string('skill_level', 50)->nullable();
             $table->string('certification', 100)->nullable();
             $table->date('date_acquired')->nullable();
             $table->timestamps();
+
+            $table->foreign('student_id')->references('student_id')->on('students')->onDelete('cascade');
+            $table->foreign('skill_id')->references('skill_id')->on('skills')->onDelete('cascade');
         });
     }
 

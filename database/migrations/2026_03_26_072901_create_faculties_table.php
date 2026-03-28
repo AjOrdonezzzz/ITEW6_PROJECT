@@ -16,11 +16,13 @@ return new class extends Migration
             $table->string('first_name', 50);
             $table->string('last_name', 50);
             $table->string('email', 100)->unique();
-            $table->foreignId('department_id')->constrained('departments', 'department_id');
+            $table->unsignedBigInteger('department_id');
             $table->string('position', 50);
             $table->string('expertise', 50);
             $table->string('status', 20);
             $table->timestamps();
+
+            $table->foreign('department_id')->references('department_id')->on('departments')->onDelete('cascade');
         });
     }
 

@@ -81,12 +81,23 @@ class StudentController extends Controller
         return response()->json($student->load(['section', 'guardian']));
     }
 
-    // DELETE /api/v1/students/{id}
-    public function destroy(int $id): JsonResponse
-    {
-        Student::findOrFail($id)->delete();
-        return response()->json(['message' => 'Student deleted successfully']);
-    }
+   // DELETE /api/v1/students/{id}
+public function destroy(int $id): JsonResponse
+{
+    $student = Student::findOrFail($id);
+
+    
+    $student->violations()->delete();
+    $student->subjects()->delete();
+    $student->skills()->delete();
+    $student->organizations()->delete();
+    $student->nonAcademicActivities()->delete();
+    $student->academicAwards()->delete();
+
+    $student->delete();
+
+    return response()->json(['message' => 'Student deleted successfully']);
+}
 
     // GET /api/v1/students/{id}/violations
     public function violations(int $id): JsonResponse
