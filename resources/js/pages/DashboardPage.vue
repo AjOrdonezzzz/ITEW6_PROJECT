@@ -104,18 +104,10 @@ export default {
             sidebarOpen: true,
             currentDate: '',
             searchQuery: '',
-
-            // Loading states
             statsLoading: false,
             violationsLoading: false,
-
-            // Stats - fetched from API
             stats: [],
-
-            // Violations - fetched from API
             violationStudents: [],
-
-            // Events - static until events table is built
             upcomingEvents: [
                 { id: 1, title: 'Student Orientation', date: 'Apr 3, 2026', location: 'Main Hall' },
                 { id: 2, title: 'Hackathon Kickoff',   date: 'Apr 8, 2026', location: 'Lab 2' },
@@ -125,22 +117,6 @@ export default {
     },
 
     computed: {
-        statsList() {
-            const totalStudents = this.studentsData.length;
-            const activeProfiles = this.studentsData.filter((student) => student.status === 'Active').length;
-            const ages = this.studentsData
-                .map((student) => Number(student.age))
-                .filter((age) => Number.isFinite(age) && age > 0);
-            const averageAge = ages.length
-                ? Math.round(ages.reduce((sum, age) => sum + age, 0) / ages.length)
-                : '--';
-
-            return [
-                { title: 'Total Students', value: String(totalStudents), icon: 'students' },
-                { title: 'Active Profiles', value: String(activeProfiles), icon: 'shield' },
-                { title: 'Average Age', value: String(averageAge), icon: 'chart' }
-            ];
-        },
         filteredStats() {
             const query = this.searchQuery.trim().toLowerCase();
             if (!query) return this.stats;
@@ -155,13 +131,8 @@ export default {
             const query = this.searchQuery.trim().toLowerCase();
             if (!query) return this.violationStudents;
             return this.violationStudents.filter((v) =>
-                [
-                    v.name,
-                    v.number,
-                    v.date,
-                    v.status,
-                    v.violation,
-                ].some((val) => String(val ?? '').toLowerCase().includes(query))
+                [v.name, v.number, v.date, v.status, v.violation]
+                    .some((val) => String(val ?? '').toLowerCase().includes(query))
             );
         },
 
@@ -186,13 +157,77 @@ export default {
             };
             return new Date().toLocaleDateString('en-US', options);
         },
-    mounted() {
+
+        formatDate(dateStr) {
+            if (!dateStr) return 'N/A';
+            return new Date(dateStr).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+            });
+        },
+
+        getStatusClass(status) {
+            const map = {
+                'Active':   'badge-active',
+                'Pending':  'badge-pending',
+                'Resolved': 'badge-resolved',
+            };
+            return map[status] ?? 'badge-default';
+        },
+
+        // GET /api/v1/dashboard/stats
+        async fetchStats() {
+            this.statsLoading = true;
+            try {
+                const { data } = await api.get('/dashboard/stats');
+                this.stats = [
+                    { title: 'Total Students',  value: Number(data.total_students).toLocaleString(), icon: '👥' },
+                    { title: 'Active Profiles', value: Number(data.active_profiles).toLocaleString(), icon: '✅' },
+                    { title: 'Average Age',     value: data.average_age, icon: '📊' },
+                ];
+            } catch (err) {
+                console.error('Failed to load stats:', err);
+                this.stats = [
+                    { title: 'Total Students',  value: '—', icon: '👥' },
+                    { title: 'Active Profiles', value: '—', icon: '✅' },
+                    { title: 'Average Age',     value: '—', icon: '📊' },
+                ];
+            } finally {
+                this.statsLoading = false;
+            }
+        },
+
+        // GET /api/v1/student-violations
+        async fetchViolations() {
+            this.violationsLoading = true;
+            try {
+                const { data } = await api.get('/student-violations');
+                this.violationStudents = data.map((v) => ({
+                    id:        v.violation_id,
+                    name:      `${v.student.first_name} ${v.student.middle_name ? v.student.middle_name[0] + '. ' : ''}${v.student.last_name}`,
+                    number:    v.student.student_number,
+                    date:      this.formatDate(v.violation_date),
+                    status:    v.status,
+                    violation: v.violationType?.violation_name + (v.description ? ` — ${v.description}` : ''),
+                }));
+            } catch (err) {
+                console.error('Failed to load violations:', err);
+                this.violationStudents = [];
+            } finally {
+                this.violationsLoading = false;
+            }
+        },
+    },  // ← methods closes here
+
+    mounted() {  // ← mounted is OUTSIDE methods
         this.currentDate = this.getFormattedDate();
         this.fetchStats();
         this.fetchViolations();
     },
 };
 </script>
+
 
 <style scoped>
 * {
