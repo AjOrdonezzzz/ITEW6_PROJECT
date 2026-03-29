@@ -1,8 +1,9 @@
-    <template>
+<template>
     <div class="auth-page">
         <div class="auth-left">
             <div class="auth-card">
                 <h1>Create account</h1>
+
                 <form @submit.prevent="handleRegister" novalidate>
                     <div class="form-group">
                         <label for="fullName">Full name</label>
@@ -26,6 +27,31 @@
                             @blur="validateUsername"
                         >
                         <span class="error-message">{{ errors.username }}</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input
+                            id="email"
+                            v-model="form.email"
+                            type="email"
+                            :class="{ error: errors.email }"
+                            @blur="validateEmail"
+                        >
+                        <span class="error-message">{{ errors.email }}</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="role">Role</label>
+                        <select
+                            id="role"
+                            v-model="form.role"
+                            class="form-select"
+                        >
+                            <option value="staff">Staff</option>
+                            <option value="faculty">Faculty</option>
+                            <option value="admin">Admin</option>
+                        </select>
                     </div>
 
                     <div class="form-group">
@@ -89,12 +115,15 @@ export default {
             form: {
                 fullName: '',
                 username: '',
+                email: '',
+                role: 'staff',
                 password: '',
                 confirmPassword: ''
             },
             errors: {
                 fullName: '',
                 username: '',
+                email: '',
                 password: '',
                 confirmPassword: ''
             },
@@ -108,51 +137,129 @@ export default {
     },
     methods: {
         validateFullName() {
-            this.errors.fullName = this.form.fullName.trim() ? '' : 'Full name is required';
-        },
-        validateUsername() {
-            this.errors.username = this.form.username.trim() ? '' : 'Username is required';
-        },
-        validatePassword() {
-            this.errors.password = this.form.password.length >= 6 ? '' : 'Password must be at least 6 characters';
-        },
-        validateConfirmPassword() {
-            this.errors.confirmPassword = this.form.confirmPassword === this.form.password
+            this.errors.fullName = this.form.fullName.trim()
                 ? ''
-                : 'Passwords do not match';
+                : 'Full name is required';
         },
+
+        validateUsername() {
+            this.errors.username = this.form.username.trim()
+                ? ''
+                : 'Username is required';
+        },
+
+        validateEmail() {
+            const email = this.form.email.trim();
+            const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+            if (!email) {
+                this.errors.email = 'Email is required';
+            } else if (!emailPattern.test(email)) {
+                this.errors.email = 'Enter a valid email address';
+            } else {
+                this.errors.email = '';
+            }
+        },
+
+        validatePassword() {
+            this.errors.password = this.form.password.length >= 8
+                ? ''
+                : 'Password must be at least 8 characters';
+        },
+
+        validateConfirmPassword() {
+            this.errors.confirmPassword =
+                this.form.confirmPassword === this.form.password
+                    ? ''
+                    : 'Passwords do not match';
+        },
+
         validateForm() {
             this.validateFullName();
             this.validateUsername();
+            this.validateEmail();
             this.validatePassword();
             this.validateConfirmPassword();
 
             return Object.values(this.errors).every((value) => !value);
         },
-        handleRegister() {
+
+        mapBackendErrors(backendErrors) {
+            if (backendErrors.name) {
+                this.errors.fullName = backendErrors.name[0];
+            }
+
+            if (backendErrors.username) {
+                this.errors.username = backendErrors.username[0];
+            }
+
+            if (backendErrors.email) {
+                this.errors.email = backendErrors.email[0];
+            }
+
+            if (backendErrors.password) {
+                this.errors.password = backendErrors.password[0];
+            }
+        },
+
+        async handleRegister() {
+            this.message = {
+                text: '',
+                type: '',
+                show: false
+            };
+
+            this.errors = {
+                fullName: '',
+                username: '',
+                email: '',
+                password: '',
+                confirmPassword: ''
+            };
+
             if (!this.validateForm()) return;
 
             this.isLoading = true;
 
-            setTimeout(() => {
-                localStorage.setItem('registeredUser', JSON.stringify({
-                    fullName: this.form.fullName.trim(),
+            try {
+                await window.axios.get('/sanctum/csrf-cookie');
+
+                await window.axios.post('/api/v1/register', {
+                    name: this.form.fullName.trim(),
                     username: this.form.username.trim(),
-                    password: this.form.password
-                }));
+                    email: this.form.email.trim(),
+                    role: this.form.role,
+                    password: this.form.password,
+                    password_confirmation: this.form.confirmPassword
+                });
 
                 this.message = {
-                    text: 'Account created. You can now log in with your new username.',
+                    text: 'Account created successfully. Redirecting to dashboard...',
                     type: 'success',
                     show: true
                 };
 
-                this.isLoading = false;
-
                 setTimeout(() => {
-                    this.$router.push('/');
-                }, 1200);
-            }, 700);
+                    this.$router.push('/dashboard');
+                }, 1000);
+            } catch (error) {
+                if (error.response?.status === 422) {
+                    this.mapBackendErrors(error.response.data.errors || {});
+                    this.message = {
+                        text: 'Please fix the highlighted fields.',
+                        type: 'error',
+                        show: true
+                    };
+                } else {
+                    this.message = {
+                        text: error.response?.data?.message || 'Registration failed. Please try again.',
+                        type: 'error',
+                        show: true
+                    };
+                }
+            } finally {
+                this.isLoading = false;
+            }
         }
     }
 };
@@ -208,7 +315,8 @@ export default {
     font-weight: 500;
 }
 
-.form-group input {
+.form-group input,
+.form-select {
     width: 100%;
     padding: 12px 14px;
     border: 1px solid #ddd;
@@ -216,9 +324,11 @@ export default {
     font-size: 14px;
     font-family: 'Poppins', sans-serif;
     transition: all 0.3s ease;
+    background: #fff;
 }
 
-.form-group input:focus {
+.form-group input:focus,
+.form-select:focus {
     outline: none;
     border-color: #b27722;
     box-shadow: 0 0 0 3px rgba(178, 119, 34, 0.1);
@@ -293,6 +403,12 @@ export default {
     background: #d1fae5;
     color: #065f46;
     border: 1px solid #6ee7b7;
+}
+
+.message.error {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fca5a5;
 }
 
 .message.hidden {
