@@ -14,6 +14,9 @@
                 <div class="page-header">
                     <h1 class="page-title">Violations</h1>
                     <p class="page-subtitle">Review active student cases and recent incident reports.</p>
+                    <button class="add-violation-btn" @click="showAddForm = !showAddForm">
+                        {{ showAddForm ? 'Close Form' : 'Add Violation' }}
+                    </button>
                 </div>
 
                 <div class="summary-grid">
@@ -23,25 +26,83 @@
                     </div>
                 </div>
 
-                <div v-if="!summaryItems.length" class="empty-state">
+                <div v-if="!summaryItems.length && !loading" class="empty-state">
                     No summary cards matched your search.
                 </div>
 
+                <div v-if="loading" class="empty-state">
+                    Loading violations...
+                </div>
+
+                <section v-if="showAddForm" class="violation-form-card">
+                    <div class="form-grid">
+                        <div class="field">
+                            <span>Student <span class="required">*</span></span>
+                            <select v-model="newViolation.student_id">
+                                <option value="">Select a student</option>
+                                <option v-for="student in students" :key="student.student_id" :value="student.student_id">
+                                    {{ student.first_name }} {{ student.middle_name ? student.middle_name + ' ' : '' }}{{ student.last_name }} ({{ student.student_number }})
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="field">
+                            <span>Violation Type <span class="required">*</span></span>
+                            <select v-model="newViolation.violation_type_id">
+                                <option value="">Select violation type</option>
+                                <option v-for="type in violationTypes" :key="type.violation_type_id" :value="type.violation_type_id">
+                                    {{ type.violation_name }} ({{ type.severity_level }})
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="field">
+                            <span>Violation Date <span class="required">*</span></span>
+                            <input v-model="newViolation.violation_date" type="date">
+                        </div>
+
+                        <div class="field">
+                            <span>Status <span class="required">*</span></span>
+                            <select v-model="newViolation.status">
+                                <option>Pending</option>
+                                <option>Active</option>
+                                <option>Resolved</option>
+                            </select>
+                        </div>
+
+                        <div class="field field-full">
+                            <span>Description</span>
+                            <textarea v-model="newViolation.description" rows="3" placeholder="Describe the violation incident"></textarea>
+                        </div>
+
+                        <div class="field field-full">
+                            <span>Action Taken</span>
+                            <input v-model="newViolation.action_taken" type="text" placeholder="What action was taken (if any)">
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button class="save-violation-btn" @click="addViolation">Save Violation</button>
+                        <span v-if="addMessage" class="violation-message">{{ addMessage }}</span>
+                    </div>
+                </section>
+
                 <div class="table-card">
-                    <h2>Recent Reports</h2>
+                    <h2>Violation Reports</h2>
 
                     <table class="violations-table">
                         <thead>
                             <tr>
-                                <th>Name</th>
+                                <th>Student Name</th>
                                 <th>Student Number</th>
-                                <th>Violation</th>
+                                <th>Violation Type</th>
                                 <th>Date</th>
                                 <th>Status</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="record in filteredRecords" :key="record.id" class="record-row" @click="openRecord(record)">
+                            <tr v-for="record in filteredRecords" :key="record.id" class="record-row">
                                 <td>{{ record.name }}</td>
                                 <td>{{ record.studentNumber }}</td>
                                 <td>{{ record.violation }}</td>
@@ -49,12 +110,14 @@
                                 <td>
                                     <div class="status-cell">
                                         <span class="status-badge">{{ record.status }}</span>
-                                        <button class="view-btn" @click.stop="openRecord(record)">View</button>
                                     </div>
+                                </td>
+                                <td>
+                                    <button class="view-btn" @click="openRecord(record)">View Details</button>
                                 </td>
                             </tr>
                             <tr v-if="!filteredRecords.length">
-                                <td colspan="5" class="empty-table-state">No violation reports matched your search.</td>
+                                <td colspan="6" class="empty-table-state">No violation reports found.</td>
                             </tr>
                         </tbody>
                     </table>
@@ -70,22 +133,22 @@
                         <div class="form-grid">
                             <label class="field">
                                 <span>Name</span>
-                                <input v-model="selectedRecord.name" type="text">
+                                <input v-model="selectedRecord.name" type="text" readonly>
                             </label>
 
                             <label class="field">
                                 <span>Student Number</span>
-                                <input v-model="selectedRecord.studentNumber" type="text">
+                                <input v-model="selectedRecord.studentNumber" type="text" readonly>
                             </label>
 
                             <label class="field field-full">
                                 <span>Violation</span>
-                                <input v-model="selectedRecord.violation" type="text">
+                                <input v-model="selectedRecord.violation" type="text" readonly>
                             </label>
 
                             <label class="field">
                                 <span>Date</span>
-                                <input v-model="selectedRecord.date" type="text">
+                                <input v-model="selectedRecord.date" type="text" readonly>
                             </label>
 
                             <label class="field">
@@ -95,6 +158,16 @@
                                     <option>Pending</option>
                                     <option>Resolved</option>
                                 </select>
+                            </label>
+
+                            <label class="field field-full">
+                                <span>Description</span>
+                                <textarea v-model="selectedRecord.description" rows="3" placeholder="Additional details about the violation"></textarea>
+                            </label>
+
+                            <label class="field field-full">
+                                <span>Action Taken</span>
+                                <input v-model="selectedRecord.action_taken" type="text" placeholder="What action was taken (if any)">
                             </label>
                         </div>
 
@@ -113,6 +186,7 @@
 <script>
 import AppHeader from '../components/AppHeader.vue';
 import Sidebar from '../components/Sidebar.vue';
+import api from '../services/api.js';
 
 export default {
     name: 'ViolationsPage',
@@ -127,12 +201,20 @@ export default {
             searchQuery: '',
             selectedRecord: null,
             editMessage: '',
-            records: [
-                { id: 1, name: 'Nicoli B. Alonso', studentNumber: '2024-00122', violation: 'JABOLING IN  class', date: 'Mar 31, 2026', status: 'Active' },
-                { id: 2, name: 'Aira Dela Cruz', studentNumber: '2024-00123', violation: 'Late submission of report', date: 'Mar 29, 2026', status: 'Pending' },
-                { id: 3, name: 'Marco Reyes', studentNumber: '2024-00124', violation: 'Dress code violation', date: 'Mar 28, 2026', status: 'Resolved' },
-                { id: 4, name: 'Joana Marie Lumogda', studentNumber: '2024-00121', violation: 'Library noise complaint', date: 'Mar 27, 2026', status: 'Active' }
-            ]
+            loading: false,
+            showAddForm: false,
+            addMessage: '',
+            records: [],
+            violationTypes: [],
+            students: [],
+            newViolation: {
+                student_id: '',
+                violation_type_id: '',
+                violation_date: '',
+                description: '',
+                action_taken: '',
+                status: 'Pending'
+            }
         };
     },
     computed: {
@@ -145,6 +227,46 @@ export default {
                     .some((value) => String(value).toLowerCase().includes(query));
             });
         },
+
+        studentsWithViolations() {
+            const studentMap = new Map();
+
+            // Group violations by student
+            this.records.forEach(violation => {
+                const student = violation._raw.student || {};
+                const studentId = student.student_id || violation._raw.student_id;
+
+                if (!studentId) {
+                    console.warn('Violation missing student ID:', violation);
+                    return;
+                }
+
+                if (!studentMap.has(studentId)) {
+                    studentMap.set(studentId, {
+                        student_id: studentId,
+                        name: violation.name,
+                        student_number: violation.studentNumber,
+                        violations: [],
+                        latest_violation_date: violation._raw.violation_date
+                    });
+                }
+
+                const studentEntry = studentMap.get(studentId);
+                studentEntry.violations.push(violation._raw);
+
+                // Update latest violation date
+                if (violation._raw.violation_date &&
+                    new Date(violation._raw.violation_date) > new Date(studentEntry.latest_violation_date)) {
+                    studentEntry.latest_violation_date = violation._raw.violation_date;
+                }
+            });
+
+            // Convert to array and sort by latest violation date
+            return Array.from(studentMap.values()).sort((a, b) =>
+                new Date(b.latest_violation_date) - new Date(a.latest_violation_date)
+            );
+        },
+
         summaryItems() {
             const baseRecords = this.searchQuery.trim() ? this.filteredRecords : this.records;
             const openCases = baseRecords.filter((record) => record.status === 'Active').length;
@@ -163,60 +285,250 @@ export default {
             const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
             return new Date().toLocaleDateString('en-US', options);
         },
-        saveRecords() {
-            localStorage.setItem('violationRecords', JSON.stringify(this.records));
+
+        formatDate(dateString) {
+            return new Date(dateString).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
+            });
         },
-        loadRecords() {
-            const savedRecords = JSON.parse(localStorage.getItem('violationRecords') || 'null');
-            if (savedRecords && Array.isArray(savedRecords) && savedRecords.length) {
-                this.records = savedRecords;
+
+        getStudentViolationStatus(violations) {
+            // Return the most severe status: Active > Pending > Resolved
+            const statusPriority = { 'Active': 3, 'Pending': 2, 'Resolved': 1 };
+            const statuses = violations.map(v => v.status);
+            const highestPriority = Math.max(...statuses.map(s => statusPriority[s] || 0));
+            return Object.keys(statusPriority).find(key => statusPriority[key] === highestPriority) || 'Unknown';
+        },
+
+        viewStudentViolations(student) {
+            // For now, just show an alert with violation details
+            // In a real app, you might open a detailed modal
+            const violationDetails = student.violations.map(v =>
+                `${v.violationType.violation_name} (${this.formatDate(v.violation_date)}) - ${v.status}`
+            ).join('\n');
+
+            alert(`Violations for ${student.name}:\n\n${violationDetails}`);
+        },
+
+        mapViolation(violation) {
+            // Handle cases where relationships might not be loaded
+            const student = violation.student || {};
+            const violationType = violation.violationType || {};
+
+            const fullName = [student.first_name, student.middle_name ?? '', student.last_name]
+                .filter(Boolean).join(' ') || 'Unknown Student';
+
+            return {
+                id: violation.violation_id,
+                name: fullName,
+                studentNumber: student.student_number || 'N/A',
+                violation: violationType.violation_name || 'Unknown Violation',
+                date: violation.violation_date ? new Date(violation.violation_date).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric'
+                }) : 'N/A',
+                status: violation.status || 'Unknown',
+                description: violation.description,
+                action_taken: violation.action_taken,
+                _raw: violation,
+            };
+        },
+
+        async fetchViolations() {
+            this.loading = true;
+            try {
+                console.log('Fetching violations...');
+                const { data } = await api.get('/student-violations');
+                console.log('Violations data received:', data);
+                this.records = data.map(this.mapViolation);
+                console.log('Mapped records:', this.records);
+            } catch (err) {
+                console.error('Failed to load violations:', err);
+                console.error('Error response:', err.response);
+            } finally {
+                this.loading = false;
             }
         },
+
+        async fetchViolationTypes() {
+            try {
+                const { data } = await api.get('/violation-types');
+                this.violationTypes = data;
+            } catch (err) {
+                console.error('Failed to load violation types:', err);
+            }
+        },
+
+        async fetchStudents() {
+            try {
+                const { data } = await api.get('/students');
+                this.students = data;
+            } catch (err) {
+                console.error('Failed to load students:', err);
+                if (err.response?.status === 404) {
+                    console.warn('Students API not found. Make sure Laravel server is running.');
+                }
+            }
+        },
+
+        async testApiConnection() {
+            try {
+                await api.get('/students?limit=1');
+                console.log('API connection successful');
+            } catch (err) {
+                console.warn('API connection failed. Make sure Laravel server is running on http://localhost:8000');
+                console.warn('Start it with: php artisan serve');
+            }
+        },
+
         openRecord(record) {
             this.selectedRecord = { ...record };
             this.editMessage = '';
         },
+
         closeRecord() {
             this.selectedRecord = null;
             this.editMessage = '';
         },
-        updateRecord() {
+
+        async updateRecord() {
             if (!this.selectedRecord.name.trim() || !this.selectedRecord.studentNumber.trim() || !this.selectedRecord.violation.trim()) {
                 this.editMessage = 'Please complete all report fields.';
                 return;
             }
 
-            const index = this.records.findIndex((record) => record.id === this.selectedRecord.id);
-            if (index === -1) return;
+            try {
+                const { data } = await api.put(`/student-violations/${this.selectedRecord.id}`, {
+                    description: this.selectedRecord.description || null,
+                    action_taken: this.selectedRecord.action_taken || null,
+                    status: this.selectedRecord.status,
+                });
 
-            this.records[index] = {
-                ...this.selectedRecord,
-                name: this.selectedRecord.name.trim(),
-                studentNumber: this.selectedRecord.studentNumber.trim(),
-                violation: this.selectedRecord.violation.trim()
-            };
-            this.saveRecords();
+                const index = this.records.findIndex((record) => record.id === this.selectedRecord.id);
+                if (index !== -1) {
+                    this.records[index] = this.mapViolation(data);
+                }
 
-            this.editMessage = 'Report updated successfully.';
-            setTimeout(() => {
-                this.closeRecord();
-            }, 900);
+                this.editMessage = 'Report updated successfully.';
+                setTimeout(() => {
+                    this.closeRecord();
+                }, 900);
+            } catch (err) {
+                console.error('Failed to update violation:', err);
+                const errors = err.response?.data?.errors;
+                if (errors) {
+                    this.editMessage = Object.values(errors).flat().join(' | ');
+                } else {
+                    this.editMessage = err.response?.data?.message ?? 'Failed to update violation.';
+                }
+            }
         },
-        deleteRecord() {
+
+        async deleteRecord() {
             if (!this.selectedRecord) return;
 
-            this.records = this.records.filter((record) => record.id !== this.selectedRecord.id);
-            this.saveRecords();
-            this.editMessage = 'Report deleted.';
+            try {
+                await api.delete(`/student-violations/${this.selectedRecord.id}`);
+                this.records = this.records.filter((record) => record.id !== this.selectedRecord.id);
+                this.editMessage = 'Report deleted successfully.';
+                setTimeout(() => {
+                    this.closeRecord();
+                }, 700);
+            } catch (err) {
+                console.error('Failed to delete violation:', err);
+                this.editMessage = err.response?.data?.message ?? 'Failed to delete violation.';
+            }
+        },
 
-            setTimeout(() => {
-                this.closeRecord();
-            }, 700);
+        resetForm() {
+            this.newViolation = {
+                student_id: '',
+                violation_type_id: '',
+                violation_date: '',
+                description: '',
+                action_taken: '',
+                status: 'Pending'
+            };
+        },
+
+        async addViolation() {
+            const {
+                student_id,
+                violation_type_id,
+                violation_date,
+                description,
+                action_taken,
+                status
+            } = this.newViolation;
+
+            const missing = [];
+            if (!student_id) missing.push('Student');
+            if (!violation_type_id) missing.push('Violation Type');
+            if (!violation_date) missing.push('Violation Date');
+            if (!status) missing.push('Status');
+
+            if (missing.length) {
+                this.addMessage = `Missing: ${missing.join(', ')}`;
+                return;
+            }
+
+            // Validate date
+            const selectedDate = new Date(violation_date);
+            if (isNaN(selectedDate.getTime())) {
+                this.addMessage = 'Invalid date format';
+                return;
+            }
+
+            try {
+                const payload = {
+                    student_id: parseInt(student_id),
+                    violation_type_id: parseInt(violation_type_id),
+                    violation_date,
+                    description: description.trim() || null,
+                    action_taken: action_taken.trim() || null,
+                    status
+                };
+
+                console.log('Sending violation data:', payload);
+
+                const { data } = await api.post('/student-violations', payload);
+
+                this.records.unshift(this.mapViolation(data));
+                this.resetForm();
+                this.addMessage = 'Violation added successfully.';
+                setTimeout(() => {
+                    this.addMessage = '';
+                    this.showAddForm = false;
+                }, 2000);
+
+            } catch (err) {
+                console.error('Failed to add violation:', err);
+                console.error('Error response:', err.response);
+                console.error('Error status:', err.response?.status);
+                console.error('Error data:', err.response?.data);
+
+                if (err.response?.status === 404) {
+                    this.addMessage = 'API endpoint not found. Make sure the Laravel server is running on http://localhost:8000';
+                } else if (err.response?.status === 422) {
+                    const errors = err.response.data.errors;
+                    this.addMessage = Object.values(errors).flat().join(' | ');
+                } else if (err.response?.status >= 500) {
+                    this.addMessage = 'Server error. Check Laravel logs for details.';
+                } else {
+                    this.addMessage = err.response?.data?.message || err.message || 'Failed to add violation. Check console for details.';
+                }
+            }
         }
     },
     mounted() {
         this.currentDate = this.getFormattedDate();
-        this.loadRecords();
+        this.testApiConnection();
+        this.fetchViolations();
+        this.fetchViolationTypes();
+        this.fetchStudents();
     }
 };
 </script>
@@ -242,6 +554,21 @@ export default {
 .page-header {
     margin-bottom: 26px;
     color: white;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.add-violation-btn {
+    padding: 12px 18px;
+    border: none;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #a89080 0%, #8a7a6a 100%);
+    color: white;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
 }
 
 .page-title {
@@ -289,6 +616,14 @@ export default {
     color: #1a1a1a;
 }
 
+.violation-form-card {
+    background: white;
+    border-radius: 20px;
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12);
+}
+
 .table-card {
     background: white;
     border-radius: 24px;
@@ -334,7 +669,27 @@ export default {
     font-size: 12px;
     font-weight: 600;
 }
+.violation-types {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
 
+.violation-type-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+    font-size: 11px;
+    font-weight: 600;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.violation-type-more {
+    background: #f3f4f6;
+    color: #6b7280;
+    border-color: #e5e7eb;
+}
 .status-cell {
     display: flex;
     align-items: center;
@@ -417,7 +772,8 @@ export default {
 }
 
 .field input,
-.field select {
+.field select,
+.field textarea {
     width: 100%;
     padding: 12px 14px;
     border: 1px solid #ddd;
@@ -447,6 +803,17 @@ export default {
     cursor: pointer;
 }
 
+.save-violation-btn {
+    padding: 12px 18px;
+    border: none;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #a89080 0%, #8a7a6a 100%);
+    color: white;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+
 .delete-record-btn {
     padding: 12px 18px;
     border: none;
@@ -459,6 +826,11 @@ export default {
 }
 
 .record-message {
+    color: #0f766e;
+    font-weight: 600;
+}
+
+.violation-message {
     color: #0f766e;
     font-weight: 600;
 }
@@ -478,6 +850,16 @@ export default {
 
     .page-title {
         font-size: 30px;
+    }
+
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+
+    .add-violation-btn {
+        width: 100%;
     }
 }
 </style>
