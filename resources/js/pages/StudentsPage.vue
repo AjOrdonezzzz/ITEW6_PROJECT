@@ -16,9 +16,14 @@
                         <h1 class="page-title">Students</h1>
                         <p class="page-subtitle">Browse enrolled students and quick profile details.</p>
                     </div>
-                    <button class="add-student-btn" @click="showAddForm = !showAddForm">
-                        {{ showAddForm ? 'Close Form' : 'Add Student' }}
-                    </button>
+                    <div class="header-actions">
+                        <button class="view-toggle-btn" @click="toggleViewMode">
+                            {{ viewMode === 'cards' ? 'Table View' : 'Card View' }}
+                        </button>
+                        <button class="add-student-btn" @click="showAddForm = !showAddForm">
+                            {{ showAddForm ? 'Close Form' : 'Add Student' }}
+                        </button>
+                    </div>
                 </div>
 
                 <section v-if="showAddForm" class="student-form-card">
@@ -154,38 +159,109 @@
 
                 <div v-if="loading" class="empty-state">Loading students...</div>
 
-                <div v-else-if="filteredStudents.length" class="student-grid">
-                    <article
-                        class="student-card"
-                        v-for="student in filteredStudents"
-                        :key="student.id"
-                        @click="openStudent(student)"
-                    >
-                        <div class="student-avatar">{{ student.initials }}</div>
-                        <div class="student-info">
-                            <h3>{{ student.name }}</h3>
-                            <p>{{ student.course }}</p>
-                            <span>{{ student.studentNumber }}</span>
-                        </div>
+                <div v-else-if="paginatedStudents.length">
+                    <!-- Card View -->
+                    <div v-if="viewMode === 'cards'" class="student-grid">
+                        <article
+                            class="student-card"
+                            v-for="student in paginatedStudents"
+                            :key="student.id"
+                            @click="openStudent(student)"
+                        >
+                            <div class="student-avatar">{{ student.initials }}</div>
+                            <div class="student-info">
+                                <h3>{{ student.name }}</h3>
+                                <p>{{ student.course }}</p>
+                                <span>{{ student.studentNumber }}</span>
+                            </div>
 
-                        <!-- ✅ Skill Badges -->
-                        <div v-if="student.skills.length" class="skill-badges">
-                            <span
-                                v-for="skill in student.skills.slice(0, 3)"
-                                :key="skill"
-                                class="skill-badge"
-                            >{{ skill }}</span>
-                            <span v-if="student.skills.length > 3" class="skill-badge skill-badge--more">
-                                +{{ student.skills.length - 3 }}
-                            </span>
-                        </div>
+                            <!-- ✅ Skill Badges -->
+                            <div v-if="student.skills.length" class="skill-badges">
+                                <span
+                                    v-for="skill in student.skills.slice(0, 3)"
+                                    :key="skill"
+                                    class="skill-badge"
+                                >{{ skill }}</span>
+                                <span v-if="student.skills.length > 3" class="skill-badge skill-badge--more">
+                                    +{{ student.skills.length - 3 }}
+                                </span>
+                            </div>
 
-                        <div class="student-status">{{ student.status }}</div>
-                    </article>
+                            <div class="student-status">{{ student.status }}</div>
+                        </article>
+                    </div>
+
+                    <!-- Table View -->
+                    <div v-else class="student-table-container">
+                        <table class="student-table">
+                            <thead>
+                                <tr>
+                                    <th>Avatar</th>
+                                    <th>Name</th>
+                                    <th>Course</th>
+                                    <th>Student Number</th>
+                                    <th>Skills</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr
+                                    v-for="student in paginatedStudents"
+                                    :key="student.id"
+                                    class="student-table-row"
+                                    @click="openStudent(student)"
+                                >
+                                    <td class="avatar-cell">
+                                        <div class="student-avatar">{{ student.initials }}</div>
+                                    </td>
+                                    <td>{{ student.name }}</td>
+                                    <td>{{ student.course }}</td>
+                                    <td>{{ student.studentNumber }}</td>
+                                    <td>
+                                        <div v-if="student.skills.length" class="skill-badges">
+                                            <span
+                                                v-for="skill in student.skills.slice(0, 3)"
+                                                :key="skill"
+                                                class="skill-badge"
+                                            >{{ skill }}</span>
+                                            <span v-if="student.skills.length > 3" class="skill-badge skill-badge--more">
+                                                +{{ student.skills.length - 3 }}
+                                            </span>
+                                        </div>
+                                        <span v-else>-</span>
+                                    </td>
+                                    <td>
+                                        <span class="student-status">{{ student.status }}</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
                 <div v-else class="empty-state">
                     No students matched your search.
+                </div>
+
+                <!-- Pagination -->
+                <div v-if="totalPages > 1" class="pagination">
+                    <button
+                        class="pagination-btn"
+                        :disabled="currentPage === 1"
+                        @click="prevPage"
+                    >
+                        Previous
+                    </button>
+                    <span class="pagination-info">
+                        Page {{ currentPage }} of {{ totalPages }}
+                    </span>
+                    <button
+                        class="pagination-btn"
+                        :disabled="currentPage === totalPages"
+                        @click="nextPage"
+                    >
+                        Next
+                    </button>
                 </div>
 
                 <div v-if="selectedStudent" class="student-modal-overlay" @click.self="closeStudent">
@@ -254,6 +330,9 @@ export default {
             searchQuery: '',
             skillFilter: null,
             loading: false,
+            viewMode: 'cards', // 'cards' or 'table'
+            currentPage: 1,
+            itemsPerPage: 10,
 
             newStudent: {
                 first_name: '', last_name: '', middle_name: '',
@@ -300,6 +379,16 @@ export default {
                 ].some((value) => String(value).toLowerCase().includes(query))
             );
         },
+
+        paginatedStudents() {
+            const start = (this.currentPage - 1) * this.itemsPerPage;
+            const end = start + this.itemsPerPage;
+            return this.filteredStudents.slice(start, end);
+        },
+
+        totalPages() {
+            return Math.ceil(this.filteredStudents.length / this.itemsPerPage);
+        },
     },
 
     methods: {
@@ -340,6 +429,30 @@ export default {
         clearFilters() {
             this.skillFilter = null;
             this.searchQuery = '';
+            this.currentPage = 1;
+        },
+
+        toggleViewMode() {
+            this.viewMode = this.viewMode === 'cards' ? 'table' : 'cards';
+            this.currentPage = 1;
+        },
+
+        nextPage() {
+            if (this.currentPage < this.totalPages) {
+                this.currentPage++;
+            }
+        },
+
+        prevPage() {
+            if (this.currentPage > 1) {
+                this.currentPage--;
+            }
+        },
+
+        goToPage(page) {
+            if (page >= 1 && page <= this.totalPages) {
+                this.currentPage = page;
+            }
         },
 
         async fetchStudents() {
@@ -524,6 +637,12 @@ export default {
         },
     },
 
+    watch: {
+        filteredStudents() {
+            this.currentPage = 1;
+        }
+    },
+
     mounted() {
         this.currentDate = this.getFormattedDate();
         this.fetchStudents();
@@ -558,6 +677,29 @@ export default {
     gap: 20px;
     margin-bottom: 26px;
     color: white;
+}
+
+.header-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.view-toggle-btn {
+    padding: 12px 18px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.view-toggle-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.5);
 }
 
 .page-title {
@@ -801,6 +943,89 @@ export default {
     font-weight: 600;
 }
 
+/* Table View */
+.student-table-container {
+    background: white;
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12);
+    overflow-x: auto;
+}
+
+.student-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.student-table th {
+    text-align: left;
+    padding: 16px 12px;
+    background: #f8f9fa;
+    color: #1a1a1a;
+    font-weight: 600;
+    font-size: 14px;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.student-table td {
+    padding: 16px 12px;
+    border-bottom: 1px solid #e9ecef;
+    vertical-align: middle;
+}
+
+.student-table-row {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.student-table-row:hover {
+    background-color: #f8f9fa;
+}
+
+.avatar-cell {
+    width: 80px;
+}
+
+/* Pagination */
+.pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 24px;
+    padding: 16px;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12);
+}
+
+.pagination-btn {
+    padding: 10px 16px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: white;
+    color: #7a3902;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+    background: #f8f9fa;
+    border-color: #7a3902;
+}
+
+.pagination-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pagination-info {
+    color: #6b7280;
+    font-weight: 600;
+}
+
 /* Modal */
 .student-modal-overlay {
     position: fixed;
@@ -843,8 +1068,12 @@ export default {
 @media (max-width: 768px) {
     .students-content { padding-left: 20px; padding-right: 20px; }
     .page-header { flex-direction: column; align-items: flex-start; }
+    .header-actions { flex-direction: column; width: 100%; }
+    .view-toggle-btn, .add-student-btn { width: 100%; }
     .form-grid { grid-template-columns: 1fr; }
     .page-title { font-size: 30px; }
     .skill-filter-bar { flex-direction: column; align-items: flex-start; }
+    .student-table-container { padding: 16px; }
+    .pagination { flex-direction: column; gap: 12px; }
 }
 </style>
