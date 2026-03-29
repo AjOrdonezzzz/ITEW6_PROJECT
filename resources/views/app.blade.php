@@ -15,6 +15,7 @@
             height: 100%;
         }
     </style>
+    <!-- helloworld -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body>
