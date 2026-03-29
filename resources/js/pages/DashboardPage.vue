@@ -1,4 +1,4 @@
-<template>
+    <template>
     <div class="dashboard-container">
         <sidebar :is-open="sidebarOpen" @toggle="sidebarOpen = !sidebarOpen"></sidebar>
 
@@ -59,14 +59,14 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="student in filteredViolationStudents" :key="student.id">
+                            <tr v-for="student in recentViolationStudents" :key="student.id">
                                 <td>{{ student.name }}</td>
                                 <td>{{ student.number }}</td>
                                 <td>{{ student.date }}</td>
                                 <td><span class="status-badge">{{ student.status }}</span></td>
                                 <td>{{ student.violation }}</td>
                             </tr>
-                            <tr v-if="!filteredViolationStudents.length">
+                            <tr v-if="!recentViolationStudents.length">
                                 <td colspan="5" class="empty-table-state">No violation records matched your search.</td>
                             </tr>
                         </tbody>
@@ -136,6 +136,10 @@ export default {
             );
         },
 
+        recentViolationStudents() {
+            return this.filteredViolationStudents.slice(0, 10);
+        },
+
         filteredUpcomingEvents() {
             const query = this.searchQuery.trim().toLowerCase();
             if (!query) return this.upcomingEvents;
@@ -176,23 +180,70 @@ export default {
             return map[status] ?? 'badge-default';
         },
 
-        // GET /api/v1/dashboard/stats
-        async fetchStats() {
-            this.statsLoading = true;
+        getAgeFromBirthdate(birthdate) {
+            if (!birthdate) return null;
+            const birth = new Date(birthdate);
+            if (Number.isNaN(birth.getTime())) return null;
+            const today = new Date();
+            let age = today.getFullYear() - birth.getFullYear();
+            const isBirthdayPassed = (today.getMonth() > birth.getMonth()) ||
+                (today.getMonth() === birth.getMonth() && today.getDate() >= birth.getDate());
+            if (!isBirthdayPassed) {
+                age -= 1;
+            }
+            return age >= 0 ? age : null;
+        },
+
+        buildStats(totalStudents, activeProfiles, averageAge) {
+            const avgAgeDisplay = Number.isFinite(averageAge) ? Number(averageAge).toFixed(1) : 'N/A';
+            this.stats = [
+                { title: 'Total Students',  value: totalStudents.toLocaleString(), icon: '👥' },
+                { title: 'Active Profiles', value: activeProfiles.toLocaleString(), icon: '✅' },
+                { title: 'Average Age',     value: avgAgeDisplay, icon: '📊' },
+            ];
+        },
+
+        async fetchStatsFallback() {
             try {
-                const { data } = await api.get('/dashboard/stats');
-                this.stats = [
-                    { title: 'Total Students',  value: Number(data.total_students).toLocaleString(), icon: '👥' },
-                    { title: 'Active Profiles', value: Number(data.active_profiles).toLocaleString(), icon: '✅' },
-                    { title: 'Average Age',     value: data.average_age, icon: '📊' },
-                ];
+                const { data } = await api.get('/students');
+                const totalStudents = Array.isArray(data) ? data.length : 0;
+                const activeProfiles = Array.isArray(data)
+                    ? data.filter((student) => student.status === 'Active').length
+                    : 0;
+                const ages = Array.isArray(data)
+                    ? data.map((student) => this.getAgeFromBirthdate(student.birthdate)).filter(Number.isFinite)
+                    : [];
+                const averageAge = ages.length ? ages.reduce((sum, age) => sum + age, 0) / ages.length : null;
+                this.buildStats(totalStudents, activeProfiles, averageAge);
             } catch (err) {
-                console.error('Failed to load stats:', err);
+                console.error('Failed to compute fallback stats:', err);
                 this.stats = [
                     { title: 'Total Students',  value: '—', icon: '👥' },
                     { title: 'Active Profiles', value: '—', icon: '✅' },
                     { title: 'Average Age',     value: '—', icon: '📊' },
                 ];
+            }
+        },
+
+        // GET /api/v1/dashboard/stats
+        async fetchStats() {
+            this.statsLoading = true;
+            try {
+                const { data } = await api.get('/dashboard/stats');
+
+                const totalStudents = Number(data.total_students ?? 0);
+                const activeProfiles = Number(data.active_profiles ?? 0);
+                const averageAgeVal = Number(data.average_age);
+
+                if (!Number.isFinite(totalStudents) || !Number.isFinite(activeProfiles) || Number.isNaN(averageAgeVal) && data.average_age !== null) {
+                    // fallback to students route if stats are invalid
+                    await this.fetchStatsFallback();
+                } else {
+                    this.buildStats(totalStudents, activeProfiles, Number.isFinite(averageAgeVal) ? averageAgeVal : null);
+                }
+            } catch (err) {
+                console.error('Failed to load stats:', err);
+                await this.fetchStatsFallback();
             } finally {
                 this.statsLoading = false;
             }
