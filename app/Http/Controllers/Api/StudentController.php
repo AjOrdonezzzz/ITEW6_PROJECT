@@ -10,9 +10,18 @@ use Illuminate\Http\JsonResponse;
 class StudentController extends Controller
 {
     // GET /api/v1/students
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $students = Student::with(['section', 'guardian'])->get();
+        $perPage = $request->query('limit');
+        $query = Student::with(['section', 'guardian']);
+
+        if ($perPage) {
+            $page = $request->query('page', 1);
+            $students = $query->paginate(intval($perPage), ['*'], 'page', intval($page));
+            return response()->json($students);
+        }
+
+        $students = $query->get();
         return response()->json($students);
     }
 

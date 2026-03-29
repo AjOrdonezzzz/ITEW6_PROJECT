@@ -333,6 +333,8 @@ export default {
             viewMode: 'cards', // 'cards' or 'table'
             currentPage: 1,
             itemsPerPage: 10,
+            remoteTotalPages: 1,
+            remoteTotalStudents: 0,
 
             newStudent: {
                 first_name: '', last_name: '', middle_name: '',
@@ -380,14 +382,25 @@ export default {
             );
         },
 
+        isRemotePagination() {
+            return this.remoteTotalStudents > 0;
+        },
+
         paginatedStudents() {
+            if (this.isRemotePagination) {
+                return this.filteredStudents;
+            }
+
             const start = (this.currentPage - 1) * this.itemsPerPage;
             const end = start + this.itemsPerPage;
             return this.filteredStudents.slice(start, end);
         },
 
         totalPages() {
-            return Math.ceil(this.filteredStudents.length / this.itemsPerPage);
+            // Prefer remote pagination info, else fallback to local calculation
+            return this.remoteTotalPages > 0
+                ? this.remoteTotalPages
+                : Math.ceil(this.filteredStudents.length / this.itemsPerPage);
         },
     },
 
@@ -437,32 +450,40 @@ export default {
             this.currentPage = 1;
         },
 
-        nextPage() {
+        async nextPage() {
             if (this.currentPage < this.totalPages) {
                 this.currentPage++;
+                await this.fetchStudents();
             }
         },
 
-        prevPage() {
+        async prevPage() {
             if (this.currentPage > 1) {
                 this.currentPage--;
+                await this.fetchStudents();
             }
         },
 
-        goToPage(page) {
+        async goToPage(page) {
             if (page >= 1 && page <= this.totalPages) {
                 this.currentPage = page;
+                await this.fetchStudents();
             }
         },
 
         async fetchStudents() {
             this.loading = true;
             try {
-                const { data } = await api.get('/students');
+                const { data } = await api.get(`/students?limit=${this.itemsPerPage}&page=${this.currentPage}`);
+
+                // Laravel paginator returns {data: ..., current_page: ..., last_page: ..., total: ...}
+                const pageData = Array.isArray(data.data) ? data.data : data;
+                this.remoteTotalPages = data.last_page || 1;
+                this.remoteTotalStudents = data.total || pageData.length;
 
                 const batchSize = 5;
-                for (let i = 0; i < data.length; i += batchSize) {
-                    const batch = data.slice(i, i + batchSize);
+                for (let i = 0; i < pageData.length; i += batchSize) {
+                    const batch = pageData.slice(i, i + batchSize);
                     await Promise.all(
                         batch.map(async (s) => {
                             try {
@@ -475,7 +496,7 @@ export default {
                     );
                 }
 
-                this.students = data.map(this.mapStudent);
+                this.students = pageData.map(this.mapStudent);
             } catch (err) {
                 console.error('Failed to load students:', err);
             } finally {
@@ -638,8 +659,13 @@ export default {
     },
 
     watch: {
-        filteredStudents() {
+        searchQuery() {
             this.currentPage = 1;
+            this.fetchStudents();
+        },
+        skillFilter() {
+            this.currentPage = 1;
+            this.fetchStudents();
         }
     },
 
