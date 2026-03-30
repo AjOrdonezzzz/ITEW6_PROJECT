@@ -42,6 +42,7 @@ return [
             'journal_mode' => null,
             'synchronous' => null,
             'transaction_mode' => 'DEFERRED',
+            'foreign_key_constraints' => true,  
         ],
 
         'mysql' => [

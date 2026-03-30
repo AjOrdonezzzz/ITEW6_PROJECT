@@ -15,8 +15,10 @@ return new class extends Migration
             $table->id('subject_id');
             $table->string('subject_code', 20)->unique();
             $table->string('subject_name', 100);
-            $table->foreignId('department_id')->constrained('departments', 'department_id');
+            $table->unsignedBigInteger('department_id');
             $table->timestamps();
+
+            $table->foreign('department_id')->references('department_id')->on('departments')->onDelete('cascade');
         });
     }
 

@@ -10,9 +10,18 @@ use Illuminate\Http\JsonResponse;
 class StudentController extends Controller
 {
     // GET /api/v1/students
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $students = Student::with(['section', 'guardian'])->get();
+        $perPage = $request->query('limit');
+        $query = Student::with(['section', 'guardian']);
+
+        if ($perPage) {
+            $page = $request->query('page', 1);
+            $students = $query->paginate(intval($perPage), ['*'], 'page', intval($page));
+            return response()->json($students);
+        }
+
+        $students = $query->get();
         return response()->json($students);
     }
 
@@ -81,12 +90,23 @@ class StudentController extends Controller
         return response()->json($student->load(['section', 'guardian']));
     }
 
-    // DELETE /api/v1/students/{id}
-    public function destroy(int $id): JsonResponse
-    {
-        Student::findOrFail($id)->delete();
-        return response()->json(['message' => 'Student deleted successfully']);
-    }
+   // DELETE /api/v1/students/{id}
+public function destroy(int $id): JsonResponse
+{
+    $student = Student::findOrFail($id);
+
+    
+    $student->violations()->delete();
+    $student->subjects()->delete();
+    $student->skills()->delete();
+    $student->organizations()->delete();
+    $student->nonAcademicActivities()->delete();
+    $student->academicAwards()->delete();
+
+    $student->delete();
+
+    return response()->json(['message' => 'Student deleted successfully']);
+}
 
     // GET /api/v1/students/{id}/violations
     public function violations(int $id): JsonResponse

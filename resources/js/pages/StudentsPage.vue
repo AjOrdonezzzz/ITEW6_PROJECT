@@ -16,9 +16,14 @@
                         <h1 class="page-title">Students</h1>
                         <p class="page-subtitle">Browse enrolled students and quick profile details.</p>
                     </div>
-                    <button class="add-student-btn" @click="showAddForm = !showAddForm">
-                        {{ showAddForm ? 'Close Form' : 'Add Student' }}
-                    </button>
+                    <div class="header-actions">
+                        <button class="view-toggle-btn" @click="toggleViewMode">
+                            {{ viewMode === 'cards' ? 'Table View' : 'Card View' }}
+                        </button>
+                        <button class="add-student-btn" @click="showAddForm = !showAddForm">
+                            {{ showAddForm ? 'Close Form' : 'Add Student' }}
+                        </button>
+                    </div>
                 </div>
 
                 <section v-if="showAddForm" class="student-form-card">
@@ -101,7 +106,7 @@
                             <span>School Year <span class="required">*</span></span>
                             <input v-model="newStudent.school_year" type="text" placeholder="e.g. 2024-2025">
                         </div>
-                       <!-- Guardian Fields -->
+
                         <div class="field">
                             <span>Guardian First Name <span class="required">*</span></span>
                             <input v-model="newStudent.guardian_first_name" type="text" placeholder="Enter guardian first name">
@@ -132,22 +137,131 @@
                         <button class="save-student-btn" @click="addStudent">Save Student</button>
                         <span v-if="studentMessage" class="student-message">{{ studentMessage }}</span>
                     </div>
-        </section>
+                </section>
 
-                <div v-if="filteredStudents.length" class="student-grid">
-                    <article class="student-card" v-for="student in filteredStudents" :key="student.id" @click="openStudent(student)">
-                        <div class="student-avatar">{{ student.initials }}</div>
-                        <div class="student-info">
-                            <h3>{{ student.name }}</h3>
-                            <p>{{ student.course }}</p>
-                            <span>{{ student.studentNumber }}</span>
-                        </div>
-                        <div class="student-status">{{ student.status }}</div>
-                    </article>
+                <!-- ✅ Skill Filter Bar -->
+                <div v-if="allSkills.length" class="skill-filter-bar">
+                    <span class="filter-label">Filter by skill:</span>
+                    <div class="skill-filter-pills">
+                        <button
+                            v-for="skill in allSkills"
+                            :key="skill"
+                            :class="['skill-filter-btn', { active: skillFilter === skill }]"
+                            @click="setSkillFilter(skill)"
+                        >
+                            {{ skill }}
+                        </button>
+                        <button v-if="skillFilter" class="skill-filter-clear" @click="clearFilters">
+                            ✕ Clear
+                        </button>
+                    </div>
+                </div>
+
+                <div v-if="loading" class="empty-state">Loading students...</div>
+
+                <div v-else-if="paginatedStudents.length">
+                    <!-- Card View -->
+                    <div v-if="viewMode === 'cards'" class="student-grid">
+                        <article
+                            class="student-card"
+                            v-for="student in paginatedStudents"
+                            :key="student.id"
+                            @click="openStudent(student)"
+                        >
+                            <div class="student-avatar">{{ student.initials }}</div>
+                            <div class="student-info">
+                                <h3>{{ student.name }}</h3>
+                                <p>{{ student.course }}</p>
+                                <span>{{ student.studentNumber }}</span>
+                            </div>
+
+                            <!-- ✅ Skill Badges -->
+                            <div v-if="student.skills.length" class="skill-badges">
+                                <span
+                                    v-for="skill in student.skills.slice(0, 3)"
+                                    :key="skill"
+                                    class="skill-badge"
+                                >{{ skill }}</span>
+                                <span v-if="student.skills.length > 3" class="skill-badge skill-badge--more">
+                                    +{{ student.skills.length - 3 }}
+                                </span>
+                            </div>
+
+                            <div class="student-status">{{ student.status }}</div>
+                        </article>
+                    </div>
+
+                    <!-- Table View -->
+                    <div v-else class="student-table-container">
+                        <table class="student-table">
+                            <thead>
+                                <tr>
+                                    <th>Avatar</th>
+                                    <th>Name</th>
+                                    <th>Course</th>
+                                    <th>Student Number</th>
+                                    <th>Skills</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr
+                                    v-for="student in paginatedStudents"
+                                    :key="student.id"
+                                    class="student-table-row"
+                                    @click="openStudent(student)"
+                                >
+                                    <td class="avatar-cell">
+                                        <div class="student-avatar">{{ student.initials }}</div>
+                                    </td>
+                                    <td>{{ student.name }}</td>
+                                    <td>{{ student.course }}</td>
+                                    <td>{{ student.studentNumber }}</td>
+                                    <td>
+                                        <div v-if="student.skills.length" class="skill-badges">
+                                            <span
+                                                v-for="skill in student.skills.slice(0, 3)"
+                                                :key="skill"
+                                                class="skill-badge"
+                                            >{{ skill }}</span>
+                                            <span v-if="student.skills.length > 3" class="skill-badge skill-badge--more">
+                                                +{{ student.skills.length - 3 }}
+                                            </span>
+                                        </div>
+                                        <span v-else>-</span>
+                                    </td>
+                                    <td>
+                                        <span class="student-status">{{ student.status }}</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
                 <div v-else class="empty-state">
                     No students matched your search.
+                </div>
+
+                <!-- Pagination -->
+                <div v-if="totalPages > 1" class="pagination">
+                    <button
+                        class="pagination-btn"
+                        :disabled="currentPage === 1"
+                        @click="prevPage"
+                    >
+                        Previous
+                    </button>
+                    <span class="pagination-info">
+                        Page {{ currentPage }} of {{ totalPages }}
+                    </span>
+                    <button
+                        class="pagination-btn"
+                        :disabled="currentPage === totalPages"
+                        @click="nextPage"
+                    >
+                        Next
+                    </button>
                 </div>
 
                 <div v-if="selectedStudent" class="student-modal-overlay" @click.self="closeStudent">
@@ -177,7 +291,7 @@
                                 <span>Status</span>
                                 <select v-model="selectedStudent.status">
                                     <option>Active</option>
-                                    <option>Regular</option>
+                                    <option>Inactive</option>
                                     <option>Probationary</option>
                                 </select>
                             </div>
@@ -190,6 +304,7 @@
                         </div>
                     </div>
                 </div>
+
             </div>
         </div>
     </div>
@@ -213,28 +328,22 @@ export default {
             editMessage: '',
             selectedStudent: null,
             searchQuery: '',
+            skillFilter: null,
             loading: false,
+            viewMode: 'cards', // 'cards' or 'table'
+            currentPage: 1,
+            itemsPerPage: 10,
+            remoteTotalPages: 1,
+            remoteTotalStudents: 0,
 
             newStudent: {
-                first_name:            '',
-                last_name:             '',
-                middle_name:           '',
-                studentNumber:         '',
-                gender:                '',
-                birthdate:             '',
-                civil_status:          '',
-                contact_number:        '',
-                email:                 '',
-                address:               '',
-                status:                'Active',
-                section_name:          '',
-                year_level:            '',
-                school_year:           '',
-                // Guardian fields
-                guardian_first_name:   '',
-                guardian_last_name:    '',
-                guardian_email:        '',
-                guardian_contact:      '',
+                first_name: '', last_name: '', middle_name: '',
+                studentNumber: '', gender: '', birthdate: '',
+                civil_status: '', contact_number: '', email: '',
+                address: '', status: 'Active',
+                section_name: '', year_level: '', school_year: '',
+                guardian_first_name: '', guardian_last_name: '',
+                guardian_email: '', guardian_contact: '',
             },
 
             students: []
@@ -242,14 +351,57 @@ export default {
     },
 
     computed: {
-        filteredStudents() {
-            const query = this.searchQuery.trim().toLowerCase();
-            if (!query) return this.students;
-            return this.students.filter((student) =>
-                [student.name, student.course, student.studentNumber, student.status]
-                    .some((value) => String(value).toLowerCase().includes(query))
+        allSkills() {
+            const skillSet = new Set();
+            this.students.forEach((s) =>
+                s.skills.forEach((sk) => skillSet.add(sk))
             );
-        }
+            return [...skillSet].sort();
+        },
+
+        filteredStudents() {
+            let list = this.students;
+
+            if (this.skillFilter) {
+                const filter = this.skillFilter.toLowerCase();
+                list = list.filter((s) =>
+                    s.skills.some((sk) => sk.toLowerCase().includes(filter))
+                );
+            }
+
+            const query = this.searchQuery.trim().toLowerCase();
+            if (!query) return list;
+            return list.filter((student) =>
+                [
+                    student.name,
+                    student.course,
+                    student.studentNumber,
+                    student.status,
+                    ...student.skills,
+                ].some((value) => String(value).toLowerCase().includes(query))
+            );
+        },
+
+        isRemotePagination() {
+            return this.remoteTotalStudents > 0;
+        },
+
+        paginatedStudents() {
+            if (this.isRemotePagination) {
+                return this.filteredStudents;
+            }
+
+            const start = (this.currentPage - 1) * this.itemsPerPage;
+            const end = start + this.itemsPerPage;
+            return this.filteredStudents.slice(start, end);
+        },
+
+        totalPages() {
+            // Prefer remote pagination info, else fallback to local calculation
+            return this.remoteTotalPages > 0
+                ? this.remoteTotalPages
+                : Math.ceil(this.filteredStudents.length / this.itemsPerPage);
+        },
     },
 
     methods: {
@@ -259,17 +411,18 @@ export default {
         },
 
         getInitials(name) {
-            return name
-                .split(' ')
-                .filter(Boolean)
-                .slice(0, 2)
-                .map((part) => part[0]?.toUpperCase() || '')
-                .join('');
+            return name.split(' ').filter(Boolean).slice(0, 2)
+                .map((p) => p[0]?.toUpperCase() || '').join('');
         },
 
         mapStudent(s) {
             const fullName = [s.first_name, s.middle_name ?? '', s.last_name]
                 .filter(Boolean).join(' ');
+
+            const skills = (s.skills ?? []).map((sk) =>
+                sk.skill?.skill_name ?? sk.skill_name ?? ''
+            ).filter(Boolean);
+
             return {
                 id:            s.student_id,
                 name:          fullName,
@@ -277,16 +430,73 @@ export default {
                 studentNumber: s.student_number,
                 status:        s.status,
                 initials:      this.getInitials(fullName),
+                skills,
                 _raw:          s,
             };
         },
 
-        // GET /api/v1/students
+        setSkillFilter(skill) {
+            this.skillFilter = this.skillFilter === skill ? null : skill;
+        },
+
+        clearFilters() {
+            this.skillFilter = null;
+            this.searchQuery = '';
+            this.currentPage = 1;
+        },
+
+        toggleViewMode() {
+            this.viewMode = this.viewMode === 'cards' ? 'table' : 'cards';
+            this.currentPage = 1;
+        },
+
+        async nextPage() {
+            if (this.currentPage < this.totalPages) {
+                this.currentPage++;
+                await this.fetchStudents();
+            }
+        },
+
+        async prevPage() {
+            if (this.currentPage > 1) {
+                this.currentPage--;
+                await this.fetchStudents();
+            }
+        },
+
+        async goToPage(page) {
+            if (page >= 1 && page <= this.totalPages) {
+                this.currentPage = page;
+                await this.fetchStudents();
+            }
+        },
+
         async fetchStudents() {
             this.loading = true;
             try {
-                const { data } = await api.get('/students');
-                this.students = data.map(this.mapStudent);
+                const { data } = await api.get(`/students?limit=${this.itemsPerPage}&page=${this.currentPage}`);
+
+                // Laravel paginator returns {data: ..., current_page: ..., last_page: ..., total: ...}
+                const pageData = Array.isArray(data.data) ? data.data : data;
+                this.remoteTotalPages = data.last_page || 1;
+                this.remoteTotalStudents = data.total || pageData.length;
+
+                const batchSize = 5;
+                for (let i = 0; i < pageData.length; i += batchSize) {
+                    const batch = pageData.slice(i, i + batchSize);
+                    await Promise.all(
+                        batch.map(async (s) => {
+                            try {
+                                const res = await api.get(`/students/${s.student_id}/skills`);
+                                s.skills = res.data;
+                            } catch {
+                                s.skills = [];
+                            }
+                        })
+                    );
+                }
+
+                this.students = pageData.map(this.mapStudent);
             } catch (err) {
                 console.error('Failed to load students:', err);
             } finally {
@@ -306,7 +516,6 @@ export default {
             };
         },
 
-        // POST /api/v1/students
         async addStudent() {
             const {
                 first_name, last_name, middle_name,
@@ -318,19 +527,18 @@ export default {
                 guardian_email, guardian_contact,
             } = this.newStudent;
 
-            // Validate required fields
             const missing = [];
-            if (!first_name.trim())           missing.push('First Name');
-            if (!last_name.trim())            missing.push('Last Name');
-            if (!studentNumber.trim())        missing.push('Student Number');
-            if (!gender)                      missing.push('Gender');
-            if (!birthdate)                   missing.push('Birthdate');
-            if (!section_name.trim())         missing.push('Section Name');
-            if (!year_level)                  missing.push('Year Level');
-            if (!school_year.trim())          missing.push('School Year');
-            if (!guardian_first_name.trim())  missing.push('Guardian First Name');
-            if (!guardian_last_name.trim())   missing.push('Guardian Last Name');
-            if (!guardian_email.trim())       missing.push('Guardian Email');
+            if (!first_name.trim())          missing.push('First Name');
+            if (!last_name.trim())           missing.push('Last Name');
+            if (!studentNumber.trim())       missing.push('Student Number');
+            if (!gender)                     missing.push('Gender');
+            if (!birthdate)                  missing.push('Birthdate');
+            if (!section_name.trim())        missing.push('Section Name');
+            if (!year_level)                 missing.push('Year Level');
+            if (!school_year.trim())         missing.push('School Year');
+            if (!guardian_first_name.trim()) missing.push('Guardian First Name');
+            if (!guardian_last_name.trim())  missing.push('Guardian Last Name');
+            if (!guardian_email.trim())      missing.push('Guardian Email');
 
             if (missing.length) {
                 this.studentMessage = `Missing: ${missing.join(', ')}`;
@@ -338,7 +546,6 @@ export default {
             }
 
             try {
-                // Step 1: Create Guardian
                 const guardianRes = await api.post('/guardians', {
                     first_name:     guardian_first_name.trim(),
                     last_name:      guardian_last_name.trim(),
@@ -346,15 +553,13 @@ export default {
                     contact_number: guardian_contact.trim() || null,
                 });
 
-                // Step 2: Create Section
                 const sectionRes = await api.post('/sections', {
                     section_name: section_name.trim(),
                     year_level:   parseInt(year_level),
                     school_year:  school_year.trim(),
-                    adviser_id:   1,
+                    adviser_id:   null,
                 });
 
-                // Step 3: Create Student linked to guardian + section
                 const { data } = await api.post('/students', {
                     student_number:  studentNumber.trim(),
                     first_name:      first_name.trim(),
@@ -371,9 +576,9 @@ export default {
                     guardian_id:     guardianRes.data.guardian_id,
                 });
 
+                data.skills = [];
                 this.students.unshift(this.mapStudent(data));
                 this.resetForm();
-
                 this.studentMessage = 'Student added successfully.';
                 setTimeout(() => { this.studentMessage = ''; }, 2000);
 
@@ -398,7 +603,6 @@ export default {
             this.editMessage = '';
         },
 
-        // PUT /api/v1/students/{id}
         async updateStudent() {
             if (!this.selectedStudent.name.trim() || !this.selectedStudent.studentNumber.trim()) {
                 this.editMessage = 'Please complete all required fields.';
@@ -419,6 +623,10 @@ export default {
                     status: this.selectedStudent.status,
                 });
 
+                data.skills = this.selectedStudent.skills.map((name) => ({
+                    skill: { skill_name: name }
+                }));
+
                 const index = this.students.findIndex((s) => s.id === this.selectedStudent.id);
                 if (index !== -1) this.students[index] = this.mapStudent(data);
 
@@ -436,7 +644,6 @@ export default {
             }
         },
 
-        // DELETE /api/v1/students/{id}
         async deleteStudent() {
             if (!this.selectedStudent) return;
             try {
@@ -451,6 +658,17 @@ export default {
         },
     },
 
+    watch: {
+        searchQuery() {
+            this.currentPage = 1;
+            this.fetchStudents();
+        },
+        skillFilter() {
+            this.currentPage = 1;
+            this.fetchStudents();
+        }
+    },
+
     mounted() {
         this.currentDate = this.getFormattedDate();
         this.fetchStudents();
@@ -459,60 +677,8 @@ export default {
 </script>
 
 <style scoped>
-.required {
-    color: #ef4444;
-}
+.required { color: #ef4444; }
 
-.guardian-results {
-    border: 1px solid #ddd;
-    border-radius: 10px;
-    margin-top: 4px;
-    overflow: hidden;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    background: white;
-    z-index: 10;
-}
-
-.guardian-result-item {
-    padding: 10px 14px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    font-size: 14px;
-    transition: background 0.15s ease;
-}
-
-.guardian-result-item:hover {
-    background: #fef3c7;
-}
-
-.guardian-email {
-    font-size: 12px;
-    color: #9ca3af;
-}
-
-.guardian-selected {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 8px;
-    padding: 8px 12px;
-    background: #d1fae5;
-    border-radius: 8px;
-    font-size: 13px;
-    font-weight: 600;
-    color: #065f46;
-}
-
-.clear-guardian {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 14px;
-    color: #065f46;
-    margin-left: auto;
-}
 .students-layout {
     display: flex;
     min-height: 100vh;
@@ -537,6 +703,29 @@ export default {
     gap: 20px;
     margin-bottom: 26px;
     color: white;
+}
+
+.header-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.view-toggle-btn {
+    padding: 12px 18px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.view-toggle-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.5);
 }
 
 .page-title {
@@ -619,6 +808,71 @@ export default {
     font-weight: 600;
 }
 
+/* ✅ Skill Filter Bar */
+.skill-filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.filter-label {
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.skill-filter-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.skill-filter-btn {
+    padding: 6px 14px;
+    border: 1.5px solid rgba(255, 255, 255, 0.45);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.85);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.skill-filter-btn:hover {
+    background: rgba(255, 255, 255, 0.18);
+    border-color: rgba(255, 255, 255, 0.8);
+    color: white;
+}
+
+.skill-filter-btn.active {
+    background: white;
+    color: #7a3902;
+    border-color: white;
+}
+
+.skill-filter-clear {
+    padding: 6px 14px;
+    border: none;
+    border-radius: 999px;
+    background: rgba(239, 68, 68, 0.85);
+    color: white;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.skill-filter-clear:hover {
+    background: #ef4444;
+}
+
+/* Student Grid */
 .student-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -680,9 +934,33 @@ export default {
     font-weight: 600;
 }
 
+/* ✅ Skill Badges on Cards */
+.skill-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 14px;
+}
+
+.skill-badge {
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(255, 107, 53, 0.08);
+    color: #7a3902;
+    font-size: 11px;
+    font-weight: 600;
+    border: 1px solid rgba(255, 107, 53, 0.2);
+}
+
+.skill-badge--more {
+    background: #f3f4f6;
+    color: #6b7280;
+    border-color: #e5e7eb;
+}
+
 .student-status {
     display: inline-flex;
-    margin-top: 18px;
+    margin-top: 14px;
     padding: 8px 14px;
     border-radius: 999px;
     background: #fef3c7;
@@ -691,6 +969,90 @@ export default {
     font-weight: 600;
 }
 
+/* Table View */
+.student-table-container {
+    background: white;
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12);
+    overflow-x: auto;
+}
+
+.student-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.student-table th {
+    text-align: left;
+    padding: 16px 12px;
+    background: #f8f9fa;
+    color: #1a1a1a;
+    font-weight: 600;
+    font-size: 14px;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.student-table td {
+    padding: 16px 12px;
+    border-bottom: 1px solid #e9ecef;
+    vertical-align: middle;
+}
+
+.student-table-row {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.student-table-row:hover {
+    background-color: #f8f9fa;
+}
+
+.avatar-cell {
+    width: 80px;
+}
+
+/* Pagination */
+.pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 24px;
+    padding: 16px;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12);
+}
+
+.pagination-btn {
+    padding: 10px 16px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: white;
+    color: #7a3902;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+    background: #f8f9fa;
+    border-color: #7a3902;
+}
+
+.pagination-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pagination-info {
+    color: #6b7280;
+    font-weight: 600;
+}
+
+/* Modal */
 .student-modal-overlay {
     position: fixed;
     inset: 0;
@@ -717,9 +1079,7 @@ export default {
     margin-bottom: 18px;
 }
 
-.student-modal-header h2 {
-    color: #1a1a1a;
-}
+.student-modal-header h2 { color: #1a1a1a; }
 
 .close-btn {
     width: 40px;
@@ -732,23 +1092,14 @@ export default {
 }
 
 @media (max-width: 768px) {
-    .students-content,
-    .top-bar {
-        padding-left: 20px;
-        padding-right: 20px;
-    }
-
-    .page-header {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    .form-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .page-title {
-        font-size: 30px;
-    }
+    .students-content { padding-left: 20px; padding-right: 20px; }
+    .page-header { flex-direction: column; align-items: flex-start; }
+    .header-actions { flex-direction: column; width: 100%; }
+    .view-toggle-btn, .add-student-btn { width: 100%; }
+    .form-grid { grid-template-columns: 1fr; }
+    .page-title { font-size: 30px; }
+    .skill-filter-bar { flex-direction: column; align-items: flex-start; }
+    .student-table-container { padding: 16px; }
+    .pagination { flex-direction: column; gap: 12px; }
 }
 </style>
