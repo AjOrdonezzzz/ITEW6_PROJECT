@@ -48,15 +48,19 @@
             </div>
         </div>
 
-        <div class="auth-right">
+        <div class="auth-right"> 
             <div class="hero-circle"></div>
             <div class="hero-copy">
+
                 <p class="eyebrow">CCS Department</p>
                 <h2>Access your profiling dashboard and manage student records securely.</h2>
+            </div>
+        </div>
         <div class="login-right">
             <div class="logo-circle">
                 <img src="/images/ccs-logo.jpg" alt="CCS Logo" class="logo-image">
             </div>
+        
         </div>
     </div>
 </template>
@@ -175,6 +179,7 @@ export default {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    
 }
 
 .auth-page {
