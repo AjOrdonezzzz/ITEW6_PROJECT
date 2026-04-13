@@ -3,24 +3,23 @@
         <div class="login-container">
             <div class="login-section">
                 <h1>Log in</h1>
-
                 <form @submit.prevent="handleLogin" novalidate>
                     <div class="form-group">
-                        <label for="login">Email or Username</label>
-                        <input
-                            id="login"
-                            v-model="form.login"
+                        <label for="username">Your username</label>
+                        <input 
+                            id="username"
+                            v-model="form.username"
                             type="text"
-                            placeholder="Enter email or username"
-                            :class="{ error: errors.login }"
-                            @blur="validateLogin"
+                            placeholder="gwillano"
+                            :class="{ error: errors.username }"
+                            @blur="validateUsername"
                         >
-                        <span class="error-message">{{ errors.login }}</span>
+                        <span class="error-message">{{ errors.username }}</span>
                     </div>
 
                     <div class="form-group">
                         <label for="password">Your password</label>
-                        <input
+                        <input 
                             id="password"
                             v-model="form.password"
                             type="password"
@@ -32,7 +31,7 @@
                     </div>
 
                     <div class="checkbox-group">
-                        <input
+                        <input 
                             id="remember"
                             v-model="form.remember"
                             type="checkbox"
@@ -44,8 +43,8 @@
                         {{ isLoading ? 'Logging in...' : 'Log in' }}
                     </button>
 
-                    <div
-                        v-if="message.text"
+                    <div 
+                        v-if="message.text" 
                         :class="['message', message.type, { hidden: !message.show }]"
                     >
                         {{ message.text }}
@@ -66,12 +65,12 @@ export default {
     data() {
         return {
             form: {
-                login: '',
+                username: '',
                 password: '',
                 remember: false
             },
             errors: {
-                login: '',
+                username: '',
                 password: ''
             },
             message: {
@@ -79,94 +78,91 @@ export default {
                 type: '',
                 show: false
             },
-            isLoading: false
+            isLoading: false,
+            validUsers: {
+                'admin': 'password123',
+                'gwillano': 'demo123',
+                'user': 'user123'
+            }
         };
     },
     methods: {
-        validateLogin() {
-            this.errors.login = this.form.login.trim()
-                ? ''
-                : 'Email or username is required';
+        validateUsername() {
+            if (!this.form.username.trim()) {
+                this.errors.username = 'Username is required';
+            } else {
+                this.errors.username = '';
+            }
         },
-
         validatePassword() {
-            this.errors.password = this.form.password
-                ? ''
-                : 'Password is required';
+            if (!this.form.password) {
+                this.errors.password = 'Password is required';
+            } else {
+                this.errors.password = '';
+            }
         },
-
         validateForm() {
-            this.validateLogin();
-            this.validatePassword();
+            this.errors.username = '';
+            this.errors.password = '';
 
-            return !this.errors.login && !this.errors.password;
-        },
-
-        mapBackendErrors(backendErrors) {
-            if (backendErrors.login) {
-                this.errors.login = backendErrors.login[0];
+            if (!this.form.username.trim()) {
+                this.errors.username = 'Username is required';
+            }
+            if (!this.form.password) {
+                this.errors.password = 'Password is required';
             }
 
-            if (backendErrors.password) {
-                this.errors.password = backendErrors.password[0];
-            }
+            return !this.errors.username && !this.errors.password;
         },
-
-        async handleLogin() {
-            this.message = {
-                text: '',
-                type: '',
-                show: false
-            };
-
-            this.errors = {
-                login: '',
-                password: ''
-            };
-
+        handleLogin() {
             if (!this.validateForm()) return;
 
             this.isLoading = true;
 
-            try {
-                await window.axios.get('/sanctum/csrf-cookie');
+            setTimeout(() => {
+                const username = this.form.username.trim();
+                const password = this.form.password;
 
-                await window.axios.post('/api/v1/login', {
-                    login: this.form.login.trim(),
-                    password: this.form.password,
-                    remember: this.form.remember
-                });
-
-                this.message = {
-                    text: 'Login successful. Redirecting...',
-                    type: 'success',
-                    show: true
-                };
-
-                this.form.password = '';
-
-                setTimeout(() => {
-                    this.$router.push('/dashboard');
-                }, 800);
-            } catch (error) {
-                if (error.response?.status === 422) {
-                    this.mapBackendErrors(error.response.data.errors || {});
+                if (this.validUsers[username] && this.validUsers[username] === password) {
                     this.message = {
-                        text: 'Invalid login credentials.',
-                        type: 'error',
+                        text: `Welcome back, ${username}! 🎉`,
+                        type: 'success',
                         show: true
                     };
+
+                    localStorage.setItem('user', JSON.stringify({
+                        username: username,
+                        rememberMe: this.form.remember
+                    }));
+
+                    this.form.password = '';
+                    
+                    setTimeout(() => {
+                        this.message.show = false;
+                    }, 3000);
                 } else {
                     this.message = {
-                        text: error.response?.data?.message || 'Login failed. Please try again.',
+                        text: 'Invalid username or password.',
                         type: 'error',
                         show: true
                     };
+                    this.errors.password = 'Incorrect password';
                 }
-            } finally {
+
                 this.isLoading = false;
+            }, 800);
+        },
+        loadSavedUser() {
+            const savedUser = localStorage.getItem('user');
+            if (savedUser) {
+                const user = JSON.parse(savedUser);
+                this.form.username = user.username;
+                this.form.remember = user.rememberMe || false;
             }
         }
+    },
+    mounted() {
+        this.loadSavedUser();
     }
 };
 </script>

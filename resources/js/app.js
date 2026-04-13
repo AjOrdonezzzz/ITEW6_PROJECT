@@ -1,29 +1,27 @@
 import './bootstrap';
 import { createApp } from 'vue';
 import { createRouter, createWebHistory } from 'vue-router';
-
 import LoginPage from './pages/LoginPage.vue';
-import RegisterPage from './pages/RegisterPage.vue';
 import DashboardPage from './pages/DashboardPage.vue';
+import RegisterPage from './pages/RegisterPage.vue';
 import StudentsPage from './pages/StudentsPage.vue';
 import ViolationsPage from './pages/ViolationsPage.vue';
 import EventsPage from './pages/EventsPage.vue';
 import ReportsPage from './pages/ReportsPage.vue';
 import SettingsPage from './pages/SettingsPage.vue';
 import ProfilePage from './pages/ProfilePage.vue';
+import { getStoredUser, isAdminUser } from './utils/auth';
 
 const routes = [
     {
         path: '/',
         name: 'Login',
-        component: LoginPage,
-        meta: { guest: true }
+        component: LoginPage
     },
     {
         path: '/register',
         name: 'Register',
-        component: RegisterPage,
-        meta: { guest: true }
+        component: RegisterPage
     },
     {
         path: '/dashboard',
@@ -53,7 +51,7 @@ const routes = [
         path: '/reports',
         name: 'Reports',
         component: ReportsPage,
-        meta: { requiresAuth: true }
+        meta: { requiresAuth: true, requiresAdmin: true }
     },
     {
         path: '/settings',
@@ -74,24 +72,22 @@ const router = createRouter({
     routes
 });
 
-async function getCurrentUser() {
-    try {
-        const response = await window.axios.get('/api/v1/user');
-        return response.data.user;
-    } catch (error) {
-        return null;
-    }
-}
-
-router.beforeEach(async (to, from, next) => {
-    const user = await getCurrentUser();
+router.beforeEach((to, from, next) => {
+    const user = getStoredUser();
 
     if (to.meta.requiresAuth && !user) {
-        return next({ name: 'Login' });
+        next('/');
+        return;
     }
 
-    if (to.meta.guest && user) {
-        return next({ name: 'Dashboard' });
+    if ((to.path === '/' || to.path === '/register') && user) {
+        next('/dashboard');
+        return;
+    }
+
+    if (to.meta.requiresAdmin && !isAdminUser(user)) {
+        next('/dashboard');
+        return;
     }
 
     next();

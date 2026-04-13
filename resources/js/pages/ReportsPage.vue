@@ -36,6 +36,7 @@
 <script>
 import AppHeader from '../components/AppHeader.vue';
 import Sidebar from '../components/Sidebar.vue';
+import { isAdminUser } from '../utils/auth';
 
 export default {
     name: 'ReportsPage',
@@ -74,6 +75,11 @@ export default {
         }
     },
     mounted() {
+        if (!isAdminUser()) {
+            this.$router.replace('/dashboard');
+            return;
+        }
+
         this.currentDate = this.getFormattedDate();
     }
 };

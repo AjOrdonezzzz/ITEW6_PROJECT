@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 use App\Models\Department;
 use App\Models\Guardian;
 use App\Models\Faculty;
@@ -20,11 +21,30 @@ use App\Models\StudentOrganization;
 use App\Models\NonAcademicActivity;
 use App\Models\FacultySubject;
 use App\Models\FacultyOrganization;
+use App\Models\User;
 
 class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
+        User::query()->updateOrCreate(
+            ['email' => 'admin@example.com'],
+            [
+                'name' => 'System Admin',
+                'role' => 'admin',
+                'password' => Hash::make('password123'),
+            ]
+        );
+
+        User::query()->updateOrCreate(
+            ['email' => 'user@example.com'],
+            [
+                'name' => 'Standard User',
+                'role' => 'user',
+                'password' => Hash::make('user123'),
+            ]
+        );
+
         Department::factory(3)->create();
         Guardian::factory(20)->create();
 
@@ -32,7 +52,7 @@ class DatabaseSeeder extends Seeder
         Section::factory(5)->create();
         $subjects = Subject::factory(8)->create();
 
-        $students = Student::factory(50)->create();
+        $students = Student::factory(1000)->create();
 
         $skills = Skill::factory(10)->create();
         $organizations = Organization::factory(5)->create();

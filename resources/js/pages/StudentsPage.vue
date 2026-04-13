@@ -592,7 +592,7 @@ export default {
                 }
             }
         },
-
+        //Dynamic Routing When a student card is clicked, their data is loaded dynamically
         openStudent(student) {
             this.selectedStudent = { ...student };
             this.editMessage = '';

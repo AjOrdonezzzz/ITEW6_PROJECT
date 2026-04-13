@@ -13,7 +13,7 @@
 
         <nav class="sidebar-nav">
             <component
-                v-for="item in menuItems"
+                v-for="item in visibleMenuItems"
                 :key="item.id"
                 :is="item.route ? 'router-link' : 'div'"
                 v-bind="item.route ? { to: item.route } : {}"
@@ -76,6 +76,8 @@
 </template>
 
 <script>
+import { clearStoredUser, getStoredUser, isAdminUser } from '../utils/auth';
+
 export default {
     name: 'Sidebar',
     props: {
@@ -86,21 +88,38 @@ export default {
     },
     data() {
         return {
+            currentUser: getStoredUser(),
             menuItems: [
                 { id: 1, label: 'Dashboard', icon: 'dashboard', route: '/dashboard' },
                 { id: 2, label: 'Students', icon: 'students', route: '/students' },
                 { id: 3, label: 'Violations', icon: 'violations', route: '/violations' },
                 { id: 4, label: 'Events', icon: 'events', route: '/events' },
-                { id: 5, label: 'Reports', icon: 'reports', route: '/reports' },
+                { id: 5, label: 'Reports', icon: 'reports', route: '/reports', adminOnly: true },
                 { id: 6, label: 'Settings', icon: 'settings', route: '/settings' }
             ]
         };
     },
+    computed: {
+        visibleMenuItems() {
+            return this.menuItems.filter((item) => !item.adminOnly || isAdminUser(this.currentUser));
+        }
+    },
     methods: {
+        syncCurrentUser() {
+            this.currentUser = getStoredUser();
+        },
         handleLogout() {
-            localStorage.removeItem('user');
+            clearStoredUser();
             this.$router.push('/');
         }
+    },
+    mounted() {
+        window.addEventListener('storage', this.syncCurrentUser);
+        window.addEventListener('focus', this.syncCurrentUser);
+    },
+    beforeUnmount() {
+        window.removeEventListener('storage', this.syncCurrentUser);
+        window.removeEventListener('focus', this.syncCurrentUser);
     }
 };
 </script>
