@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\Api\AuthController;
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\Api\StudentController;
@@ -23,85 +22,66 @@ use App\Http\Controllers\Api\FacultyOrganizationController;
 
 Route::prefix('v1')->group(function () {
 
-    /*
-    |--------------------------------------------------------------------------
-    | Public Authentication Routes
-    |--------------------------------------------------------------------------
-    */
-    Route::post('register', [AuthController::class, 'register']);
-    Route::post('login', [AuthController::class, 'login']);
+    // Dashboard Stats
+    Route::get('dashboard/stats', [StudentController::class, 'stats']);
 
-    /*
-    |--------------------------------------------------------------------------
-    | Protected Routes
-    |--------------------------------------------------------------------------
-    */
-    Route::middleware('auth:sanctum')->group(function () {
+    // Students
+    Route::apiResource('students', StudentController::class);
+    Route::get('students/{id}/violations', [StudentController::class, 'violations']);
+    Route::get('students/{id}/subjects',   [StudentController::class, 'subjects']);
+    Route::get('students/{id}/skills',     [StudentController::class, 'skills']);
+    Route::get('students/{id}/awards',     [StudentController::class, 'awards']);
 
-        // Authenticated User
-        Route::get('user', [AuthController::class, 'user']);
-        Route::post('logout', [AuthController::class, 'logout']);
+    // Guardians
+    Route::apiResource('guardians', GuardianController::class);
 
-        // Dashboard Stats
-        Route::get('dashboard/stats', [StudentController::class, 'stats']);
+    // Departments
+    Route::apiResource('departments', DepartmentController::class);
 
-        // Students
-        Route::apiResource('students', StudentController::class);
-        Route::get('students/{id}/violations', [StudentController::class, 'violations']);
-        Route::get('students/{id}/subjects', [StudentController::class, 'subjects']);
-        Route::get('students/{id}/skills', [StudentController::class, 'skills']);
-        Route::get('students/{id}/awards', [StudentController::class, 'awards']);
+    // Faculty
+    Route::apiResource('faculty', FacultyController::class);
+    Route::get('faculty/{id}/subjects',      [FacultyController::class, 'subjects']);
+    Route::get('faculty/{id}/organizations', [FacultyController::class, 'organizations']);
+    Route::get('faculty/{id}/sections',      [FacultyController::class, 'sections']);
 
-        // Guardians
-        Route::apiResource('guardians', GuardianController::class);
+    // Sections
+    Route::apiResource('sections', SectionController::class);
+    Route::get('sections/{id}/students', [SectionController::class, 'students']);
 
-        // Departments
-        Route::apiResource('departments', DepartmentController::class);
+    // Subjects
+    Route::apiResource('subjects', SubjectController::class);
 
-        // Faculty
-        Route::apiResource('faculty', FacultyController::class);
-        Route::get('faculty/{id}/subjects', [FacultyController::class, 'subjects']);
-        Route::get('faculty/{id}/organizations', [FacultyController::class, 'organizations']);
-        Route::get('faculty/{id}/sections', [FacultyController::class, 'sections']);
+    // Student Subjects (Grades)
+    Route::apiResource('student-subjects', StudentSubjectController::class);
 
-        // Sections
-        Route::apiResource('sections', SectionController::class);
-        Route::get('sections/{id}/students', [SectionController::class, 'students']);
+    // Academic Awards
+    Route::apiResource('academic-awards', AcademicAwardController::class);
 
-        // Subjects
-        Route::apiResource('subjects', SubjectController::class);
+    // Organizations
+    Route::apiResource('organizations', OrganizationController::class);
 
-        // Student Subjects (Grades)
-        Route::apiResource('student-subjects', StudentSubjectController::class);
+    // Student Organizations
+    Route::apiResource('student-organizations', StudentOrganizationController::class);
 
-        // Academic Awards
-        Route::apiResource('academic-awards', AcademicAwardController::class);
+    // Non Academic Activities
+    Route::apiResource('non-academic-activities', NonAcademicActivityController::class);
 
-        // Organizations
-        Route::apiResource('organizations', OrganizationController::class);
+    // Skills
+    Route::apiResource('skills', SkillController::class);
 
-        // Student Organizations
-        Route::apiResource('student-organizations', StudentOrganizationController::class);
+    // Student Skills
+    Route::apiResource('student-skills', StudentSkillController::class);
 
-        // Non Academic Activities
-        Route::apiResource('non-academic-activities', NonAcademicActivityController::class);
+    // Violation Types
+    Route::apiResource('violation-types', ViolationTypeController::class);
 
-        // Skills
-        Route::apiResource('skills', SkillController::class);
+    // Student Violations
+    Route::apiResource('student-violations', StudentViolationController::class);
 
-        // Student Skills
-        Route::apiResource('student-skills', StudentSkillController::class);
+    // Faculty Subjects
+    Route::apiResource('faculty-subjects', FacultySubjectController::class);
 
-        // Violation Types
-        Route::apiResource('violation-types', ViolationTypeController::class);
+    // Faculty Organizations
+    Route::apiResource('faculty-organizations', FacultyOrganizationController::class);
 
-        // Student Violations
-        Route::apiResource('student-violations', StudentViolationController::class);
-
-        // Faculty Subjects
-        Route::apiResource('faculty-subjects', FacultySubjectController::class);
-
-        // Faculty Organizations
-        Route::apiResource('faculty-organizations', FacultyOrganizationController::class);
-    });
 });

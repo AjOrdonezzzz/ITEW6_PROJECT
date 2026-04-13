@@ -1,41 +1,51 @@
 <template>
-    <div class="auth-page">
-        <div class="auth-left">
-            <div class="auth-card">
-                <h1>Welcome back</h1>
-
+    <div class="login-page">
+        <div class="login-left">
+            <div class="login-card">
+                <h1>Log in</h1>
                 <form @submit.prevent="handleLogin" novalidate>
                     <div class="form-group">
-                        <label for="login">Email or Username</label>
+                        <label for="username">Your username</label>
                         <input
-                            id="login"
-                            v-model="form.login"
+                            id="username"
+                            v-model="form.username"
                             type="text"
-                            :class="{ error: errors.login }"
-                            @blur="validateLogin"
+                            placeholder=""
+                            :class="{ error: errors.username }"
+                            @blur="validateUsername"
                         >
-                        <span class="error-message">{{ errors.login }}</span>
+                        <span class="error-message">{{ errors.username }}</span>
                     </div>
 
                     <div class="form-group">
-                        <label for="password">Password</label>
+                        <label for="password">Your password</label>
                         <input
                             id="password"
                             v-model="form.password"
                             type="password"
+                            placeholder=""
                             :class="{ error: errors.password }"
                             @blur="validatePassword"
                         >
                         <span class="error-message">{{ errors.password }}</span>
                     </div>
 
-                    <button type="submit" class="auth-btn" :disabled="isLoading">
-                        {{ isLoading ? 'Signing in...' : 'Login' }}
+                    <div class="checkbox-group">
+                        <input
+                            id="remember"
+                            v-model="form.remember"
+                            type="checkbox"
+                        >
+                        <label for="remember">Remember me</label>
+                    </div>
+
+                    <button type="submit" class="login-btn" :disabled="isLoading">
+                        {{ isLoading ? 'Logging in...' : 'Log in' }}
                     </button>
 
-                    <p class="switch-prompt">
-                        Don’t have an account?
-                        <router-link to="/register" class="switch-link">Register</router-link>
+                    <p class="register-prompt">
+                        Don't have an account?
+                        <router-link to="/register" class="register-link">Register</router-link>
                     </p>
 
                     <div
@@ -48,34 +58,36 @@
             </div>
         </div>
 
-        <div class="auth-right"> 
-            <div class="hero-circle"></div>
-            <div class="hero-copy">
-
-                <p class="eyebrow">CCS Department</p>
-                <h2>Access your profiling dashboard and manage student records securely.</h2>
-            </div>
-        </div>
         <div class="login-right">
-            <div class="logo-circle">
-                <img src="/images/ccs-logo.jpg" alt="CCS Logo" class="logo-image">
+            <div class="hero-copy">
+                <p class="eyebrow">CCS Department</p>
+                <h2>Access your profiling dashboard and manage student records securely.
+                    <br><br>
+                </h2>
             </div>
-        
+            <div class="login">
+                <div class="logo-circle">
+                    <img src="/images/ccs-logo.jpg" alt="CCS Logo" class="logo-image">
+                </div>
+            </div>
         </div>
     </div>
 </template>
 
 <script>
+import { getStoredRegisteredUser, setStoredUser } from '../utils/auth';
+
 export default {
     name: 'LoginPage',
     data() {
         return {
             form: {
-                login: '',
-                password: ''
+                username: '',
+                password: '',
+                remember: false
             },
             errors: {
-                login: '',
+                username: '',
                 password: ''
             },
             message: {
@@ -83,136 +95,173 @@ export default {
                 type: '',
                 show: false
             },
-            isLoading: false
+            isLoading: false,
+            validUsers: {
+                admin: { password: 'password123', role: 'admin' },
+                gwillano: { password: 'demo123', role: 'user' },
+                user: { password: 'user123', role: 'user' }
+            }
         };
     },
     methods: {
-        validateLogin() {
-            this.errors.login = this.form.login.trim()
-                ? ''
-                : 'Email or username is required';
+        validateUsername() {
+            if (!this.form.username.trim()) {
+                this.errors.username = 'Username is required';
+            } else {
+                this.errors.username = '';
+            }
         },
-
         validatePassword() {
-            this.errors.password = this.form.password
-                ? ''
-                : 'Password is required';
+            if (!this.form.password) {
+                this.errors.password = 'Password is required';
+            } else {
+                this.errors.password = '';
+            }
         },
-
         validateForm() {
-            this.validateLogin();
-            this.validatePassword();
+            this.errors.username = '';
+            this.errors.password = '';
 
-            return Object.values(this.errors).every((value) => !value);
-        },
-
-        mapBackendErrors(backendErrors) {
-            if (backendErrors.login) {
-                this.errors.login = backendErrors.login[0];
+            if (!this.form.username.trim()) {
+                this.errors.username = 'Username is required';
+            }
+            if (!this.form.password) {
+                this.errors.password = 'Password is required';
             }
 
-            if (backendErrors.password) {
-                this.errors.password = backendErrors.password[0];
-            }
+            return !this.errors.username && !this.errors.password;
         },
-
-        async handleLogin() {
-            this.message = {
-                text: '',
-                type: '',
-                show: false
-            };
-
-            this.errors = {
-                login: '',
-                password: ''
-            };
-
+        handleLogin() {
             if (!this.validateForm()) return;
 
             this.isLoading = true;
 
-            try {
-                await window.axios.get('/sanctum/csrf-cookie');
+            setTimeout(() => {
+                const username = this.form.username.trim();
+                const password = this.form.password;
+                const registeredUser = getStoredRegisteredUser();
+                const demoUser = this.validUsers[username];
+                const isDemoUser = demoUser && demoUser.password === password;
+                const isRegisteredUser = registeredUser
+                    && registeredUser.username === username
+                    && registeredUser.password === password;
 
-                await window.axios.post('/api/v1/login', {
-                    login: this.form.login.trim(),
-                    password: this.form.password
-                });
+                if (isDemoUser || isRegisteredUser) {
+                    const role = isRegisteredUser ? (registeredUser.role || 'user') : demoUser.role;
 
-                this.message = {
-                    text: 'Login successful. Redirecting to dashboard...',
-                    type: 'success',
-                    show: true
-                };
-
-                setTimeout(() => {
-                    this.$router.push('/dashboard');
-                }, 900);
-            } catch (error) {
-                if (error.response?.status === 422) {
-                    this.mapBackendErrors(error.response.data.errors || {});
                     this.message = {
-                        text: 'Invalid login credentials. Please try again.',
-                        type: 'error',
+                        text: `Welcome back, ${username}!`,
+                        type: 'success',
                         show: true
                     };
+
+                    setStoredUser({
+                        username,
+                        fullName: registeredUser?.fullName || username,
+                        role,
+                        rememberMe: this.form.remember
+                    });
+
+                    this.form.password = '';
+
+                    setTimeout(() => {
+                        this.$router.push('/dashboard');
+                    }, 800);
                 } else {
                     this.message = {
-                        text: error.response?.data?.message || 'Login failed. Please try again.',
+                        text: 'Invalid username or password.',
                         type: 'error',
                         show: true
                     };
+                    this.errors.password = 'Incorrect password';
                 }
-            } finally {
+
                 this.isLoading = false;
+            }, 800);
+        },
+        loadSavedUser() {
+            const savedUser = localStorage.getItem('user');
+            if (savedUser) {
+                const user = JSON.parse(savedUser);
+                this.form.username = user.username;
+                this.form.remember = user.rememberMe || false;
             }
         }
+    },
+    mounted() {
+        this.loadSavedUser();
     }
 };
 </script>
 
-<style scoped>
+<style>
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    
 }
 
-.auth-page {
-    min-height: 100vh;
-    display: grid;
-    grid-template-columns: 1.05fr 0.95fr;
-    background: linear-gradient(135deg, #b27722 0%, #7a3902 45%, #211000 100%);
+html, body {
+    width: 100%;
+    height: 100%;
     font-family: 'Poppins', sans-serif;
 }
 
-.auth-left {
+body {
+    background: linear-gradient(135deg, #b27722 0%, #7a3902 45%, #211000 100%);
+}
+
+#app {
+    width: 100%;
+    height: 100%;
+}
+
+.login-page {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #b27722 0%, #7a3902 45%, #211000 100%);
+}
+
+.login-left {
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    padding: 40px 60px 40px 20px;
+    padding-right: 60px;
 }
 
-.auth-card {
-    width: min(430px, 100%);
-    background: rgba(255, 255, 255, 0.96);
-    border-radius: 24px;
-    padding: 42px;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+.login-card {
+    background: white;
+    border-radius: 20px;
+    padding: 50px;
+    width: 70vh;
+    height: 80vh;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 }
 
-.auth-card h1 {
-    font-size: 32px;
-    color: #18181b;
-    margin-bottom: 26px;
+.login-card h1 {
+    font-size: 28px;
+    text-align: center;
+    margin-bottom: 35px;
+    color: #1a1a1a;
+    font-weight: 700;
+    width: 100%;
+}
+
+.login-card form {
+    width: 100%;
+    max-width: 280px;
 }
 
 .form-group {
-    margin-bottom: 18px;
+    margin-bottom: 22px;
 }
 
 .form-group label {
@@ -223,17 +272,20 @@ export default {
     font-weight: 500;
 }
 
-.form-group input {
+.form-group input[type="text"],
+.form-group input[type="password"] {
     width: 100%;
     padding: 12px 14px;
     border: 1px solid #ddd;
-    border-radius: 8px;
+    border-radius: 6px;
     font-size: 14px;
     font-family: 'Poppins', sans-serif;
     transition: all 0.3s ease;
+    background: white;
 }
 
-.form-group input:focus {
+.form-group input[type="text"]:focus,
+.form-group input[type="password"]:focus {
     outline: none;
     border-color: #b27722;
     box-shadow: 0 0 0 3px rgba(178, 119, 34, 0.1);
@@ -245,53 +297,78 @@ export default {
 }
 
 .error-message {
-    display: block;
-    min-height: 16px;
-    margin-top: 4px;
     font-size: 12px;
     color: #ef4444;
+    margin-top: 4px;
+    display: block;
+    min-height: 16px;
     font-weight: 500;
 }
 
-.auth-btn {
+.checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 25px;
+    margin-top: 20px;
+}
+
+.checkbox-group input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: #b27722;
+}
+
+.checkbox-group label {
+    margin: 0;
+    font-size: 13px;
+    color: #555;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.login-btn {
     width: 100%;
-    margin-top: 10px;
     padding: 14px;
-    border: none;
-    border-radius: 999px;
     background: linear-gradient(135deg, #a89080 0%, #8a7a6a 100%);
     color: white;
+    border: none;
+    border-radius: 25px;
     font-size: 15px;
     font-weight: 600;
     font-family: 'Poppins', sans-serif;
     cursor: pointer;
     transition: all 0.3s ease;
+    margin-top: 10px;
 }
 
-.auth-btn:hover:not(:disabled) {
+.login-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #998f7f 0%, #7a6a5a 100%);
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
 }
 
-.auth-btn:disabled {
+.login-btn:disabled {
     background: #ccc;
     cursor: not-allowed;
+    transform: none;
 }
 
-.switch-prompt {
+.register-prompt {
     margin-top: 18px;
     font-size: 13px;
     text-align: center;
     color: #666;
 }
 
-.switch-link {
+.register-link {
     color: #b27722;
     font-weight: 600;
     text-decoration: none;
 }
 
-.switch-link:hover {
+.register-link:hover {
     text-decoration: underline;
 }
 
@@ -301,6 +378,7 @@ export default {
     border-radius: 8px;
     font-size: 14px;
     text-align: center;
+    animation: slideDown 0.3s ease;
     font-weight: 600;
 }
 
@@ -320,24 +398,28 @@ export default {
     display: none;
 }
 
-.auth-right {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    padding: 60px;
-    color: white;
-    overflow: hidden;
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
-.hero-circle {
-    position: absolute;
-    right: 80px;
-    width: 320px;
-    height: 320px;
+.login-right {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.logo-circle {
+    width: 280px;
+    height: 280px;
     border-radius: 50%;
-    background: radial-gradient(circle at 30% 30%, rgba(255, 188, 92, 0.35), rgba(74, 31, 0, 0.08));
-    box-shadow: 0 0 0 30px rgba(255, 255, 255, 0.03);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -355,36 +437,40 @@ export default {
     filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.18));
 }
 
-.hero-copy {
-    position: relative;
-    max-width: 360px;
+@media (max-width: 1024px) {
+    .login-left {
+        padding-right: 40px;
+    }
+
+    .login-card {
+        width: 300px;
+        padding: 45px;
+    }
+
+    .logo-circle {
+        width: 250px;
+        height: 250px;
+    }
 }
 
-.eyebrow {
-    margin-bottom: 14px;
-    font-size: 13px;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    opacity: 0.7;
-}
-
-.hero-copy h2 {
-    font-size: 38px;
-    line-height: 1.15;
-}
-
-@media (max-width: 900px) {
-    .auth-page {
+@media (max-width: 768px) {
+    .login-page {
         grid-template-columns: 1fr;
+        padding: 20px;
     }
 
-    .auth-left {
+    .login-left {
+        padding-right: 0;
         justify-content: center;
-        padding: 24px;
     }
 
-    .auth-right {
+    .login-right {
         display: none;
+    }
+
+    .login-card {
+        width: 100%;
+        max-width: 350px;
     }
 }
 </style>
