@@ -474,27 +474,26 @@ export default {
         async fetchStudents() {
             this.loading = true;
             try {
-                const { data } = await api.get(`/students?limit=${this.itemsPerPage}&page=${this.currentPage}`);
+                const params = new URLSearchParams({
+                    limit: String(this.itemsPerPage),
+                    page: String(this.currentPage),
+                });
+
+                const query = this.searchQuery.trim();
+                if (query) {
+                    params.set('q', query);
+                }
+
+                if (this.skillFilter) {
+                    params.set('skill', this.skillFilter);
+                }
+
+                const { data } = await api.get(`/students?${params.toString()}`);
 
                 // Laravel paginator returns {data: ..., current_page: ..., last_page: ..., total: ...}
                 const pageData = Array.isArray(data.data) ? data.data : data;
                 this.remoteTotalPages = data.last_page || 1;
                 this.remoteTotalStudents = data.total || pageData.length;
-
-                const batchSize = 5;
-                for (let i = 0; i < pageData.length; i += batchSize) {
-                    const batch = pageData.slice(i, i + batchSize);
-                    await Promise.all(
-                        batch.map(async (s) => {
-                            try {
-                                const res = await api.get(`/students/${s.student_id}/skills`);
-                                s.skills = res.data;
-                            } catch {
-                                s.skills = [];
-                            }
-                        })
-                    );
-                }
 
                 this.students = pageData.map(this.mapStudent);
             } catch (err) {
