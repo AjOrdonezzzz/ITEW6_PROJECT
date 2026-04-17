@@ -62,12 +62,71 @@
                     <p class="calendar-selected">{{ selectedDateLabel }}</p>
                 </div>
             </div>
-            <button class="notif-btn" title="Notifications" aria-label="Notifications">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M15 18H5.5a1.5 1.5 0 0 1-1.2-2.4L6 13V10a6 6 0 1 1 12 0v3l1.7 2.6a1.5 1.5 0 0 1-1.2 2.4H15" />
-                    <path d="M9.5 18a2.5 2.5 0 0 0 5 0" />
-                </svg>
-            </button>
+            <div class="notif-wrap">
+                <button
+                    class="notif-btn"
+                    :class="{ 'is-active': showNotifications }"
+                    title="Notifications"
+                    aria-label="Notifications"
+                    @click.stop="toggleNotifications"
+                >
+                    <span v-if="unreadCount" class="notif-badge">{{ unreadBadge }}</span>
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M15 18H5.5a1.5 1.5 0 0 1-1.2-2.4L6 13V10a6 6 0 1 1 12 0v3l1.7 2.6a1.5 1.5 0 0 1-1.2 2.4H15" />
+                        <path d="M9.5 18a2.5 2.5 0 0 0 5 0" />
+                    </svg>
+                </button>
+
+                <div v-if="showNotifications" class="notif-popup">
+                    <div class="notif-popup-header">
+                        <div>
+                            <strong>Notifications</strong>
+                            <p>{{ unreadSummary }}</p>
+                        </div>
+                        <button
+                            v-if="unreadCount"
+                            class="notif-clear-btn"
+                            @click="markAllNotificationsAsRead"
+                        >
+                            Mark all read
+                        </button>
+                    </div>
+
+                    <div v-if="notificationsLoading" class="notif-state">
+                        Loading notifications...
+                    </div>
+
+                    <div v-else-if="notificationsError" class="notif-state is-error">
+                        {{ notificationsError }}
+                    </div>
+
+                    <div v-else-if="!notifications.length" class="notif-state">
+                        No notifications yet.
+                    </div>
+
+                    <div v-else class="notif-list">
+                        <button
+                            v-for="notification in notifications"
+                            :key="notification.id"
+                            class="notif-item"
+                            :class="{
+                                'is-unread': !isNotificationRead(notification.id),
+                                [`severity-${notification.severity || 'info'}`]: true
+                            }"
+                            @click="openNotification(notification)"
+                        >
+                            <span class="notif-indicator"></span>
+                            <div class="notif-content">
+                                <div class="notif-row">
+                                    <strong>{{ notification.title }}</strong>
+                                    <span>{{ formatRelativeTime(notification.occurred_at) }}</span>
+                                </div>
+                                <p>{{ notification.message }}</p>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            </div>
             <router-link to="/profile" class="profile-link">
                 <div class="user-profile">
                     <img v-if="profile.avatar" :src="profile.avatar" alt="Profile" class="profile-img">
@@ -80,10 +139,15 @@
 </template>
 
 <script>
+import api from '../services/api';
+import { getStoredUser } from '../utils/auth';
+
 const DEFAULT_PROFILE = {
     fullName: 'Joana Lumogda',
     avatar: ''
 };
+
+const NOTIFICATION_STORAGE_PREFIX = 'readNotifications';
 
 export default {
     name: 'AppHeader',
@@ -109,8 +173,13 @@ export default {
         return {
             profile: { ...DEFAULT_PROFILE },
             showCalendar: false,
+            showNotifications: false,
             currentMonthDate: new Date(),
-            selectedDate: new Date()
+            selectedDate: new Date(),
+            notifications: [],
+            notificationsLoading: false,
+            notificationsError: '',
+            readNotificationIds: []
         };
     },
     computed: {
@@ -140,6 +209,23 @@ export default {
                 day: 'numeric',
                 year: 'numeric'
             })}`;
+        },
+        unreadCount() {
+            return this.notifications.filter((notification) => !this.isNotificationRead(notification.id)).length;
+        },
+        unreadBadge() {
+            return this.unreadCount > 9 ? '9+' : String(this.unreadCount);
+        },
+        unreadSummary() {
+            if (!this.notifications.length) {
+                return 'No activity yet';
+            }
+
+            if (!this.unreadCount) {
+                return 'All caught up';
+            }
+
+            return `${this.unreadCount} unread notification${this.unreadCount > 1 ? 's' : ''}`;
         },
         calendarDays() {
             const monthStart = new Date(
@@ -181,12 +267,62 @@ export default {
     },
     methods: {
         loadProfile() {
-            const savedProfile = JSON.parse(localStorage.getItem('profileData') || 'null');
-            if (savedProfile) {
-                this.profile = {
-                    fullName: savedProfile.fullName || DEFAULT_PROFILE.fullName,
-                    avatar: savedProfile.avatar || ''
-                };
+            try {
+                const savedProfile = JSON.parse(localStorage.getItem('profileData') || 'null');
+                if (savedProfile) {
+                    this.profile = {
+                        fullName: savedProfile.fullName || DEFAULT_PROFILE.fullName,
+                        avatar: savedProfile.avatar || ''
+                    };
+                }
+            } catch {
+                this.profile = { ...DEFAULT_PROFILE };
+            }
+        },
+        getNotificationStorageKey() {
+            const user = getStoredUser();
+            const identifier = user?.username || user?.name || 'guest';
+            return `${NOTIFICATION_STORAGE_PREFIX}:${identifier}`;
+        },
+        loadReadNotifications() {
+            try {
+                const savedIds = JSON.parse(localStorage.getItem(this.getNotificationStorageKey()) || '[]');
+                this.readNotificationIds = Array.isArray(savedIds) ? savedIds : [];
+            } catch {
+                this.readNotificationIds = [];
+            }
+        },
+        saveReadNotifications() {
+            localStorage.setItem(this.getNotificationStorageKey(), JSON.stringify(this.readNotificationIds));
+        },
+        isNotificationRead(notificationId) {
+            return this.readNotificationIds.includes(notificationId);
+        },
+        trimReadNotifications() {
+            const activeIds = new Set(this.notifications.map((notification) => notification.id));
+            this.readNotificationIds = this.readNotificationIds.filter((notificationId) => activeIds.has(notificationId));
+            this.saveReadNotifications();
+        },
+        async fetchNotifications(force = false) {
+            if (this.notificationsLoading) {
+                return;
+            }
+
+            if (!force && this.notifications.length) {
+                return;
+            }
+
+            this.notificationsLoading = true;
+            this.notificationsError = '';
+
+            try {
+                const { data } = await api.get('/notifications');
+                this.notifications = Array.isArray(data?.notifications) ? data.notifications : [];
+                this.trimReadNotifications();
+            } catch (error) {
+                this.notificationsError = error?.response?.data?.message || 'Unable to load notifications right now.';
+            } finally {
+                this.notificationsLoading = false;
             }
         },
         goBack() {
@@ -199,6 +335,9 @@ export default {
         },
         toggleCalendar() {
             this.showCalendar = !this.showCalendar;
+            if (this.showCalendar) {
+                this.showNotifications = false;
+            }
         },
         changeMonth(direction) {
             this.currentMonthDate = new Date(
@@ -207,27 +346,92 @@ export default {
                 1
             );
         },
+        async toggleNotifications() {
+            this.showNotifications = !this.showNotifications;
+
+            if (!this.showNotifications) {
+                return;
+            }
+
+            this.showCalendar = false;
+            await this.fetchNotifications(true);
+        },
+        markNotificationAsRead(notificationId) {
+            if (this.isNotificationRead(notificationId)) {
+                return;
+            }
+
+            this.readNotificationIds = [...this.readNotificationIds, notificationId];
+            this.saveReadNotifications();
+        },
+        markAllNotificationsAsRead() {
+            this.readNotificationIds = this.notifications.map((notification) => notification.id);
+            this.saveReadNotifications();
+        },
+        openNotification(notification) {
+            this.markNotificationAsRead(notification.id);
+            this.showNotifications = false;
+
+            if (notification.route && this.$route.path !== notification.route) {
+                this.$router.push(notification.route);
+            }
+        },
+        formatRelativeTime(timestamp) {
+            if (!timestamp) {
+                return 'Just now';
+            }
+
+            const date = new Date(timestamp);
+            const diffInSeconds = Math.round((date.getTime() - Date.now()) / 1000);
+            const formatter = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
+            const units = [
+                ['day', 86400],
+                ['hour', 3600],
+                ['minute', 60]
+            ];
+
+            for (const [unit, seconds] of units) {
+                if (Math.abs(diffInSeconds) >= seconds || unit === 'minute') {
+                    return formatter.format(Math.round(diffInSeconds / seconds), unit);
+                }
+            }
+
+            return 'Just now';
+        },
         selectDate(day) {
             this.selectedDate = new Date(day.date);
         },
+        handleWindowFocus() {
+            this.loadProfile();
+            this.fetchNotifications(true);
+        },
+        handleStorageChange() {
+            this.loadProfile();
+            this.loadReadNotifications();
+        },
         handleOutsideClick(event) {
-            if (!this.showCalendar) return;
-
             const calendarElement = this.$el.querySelector('.calendar-wrap');
-            if (calendarElement && !calendarElement.contains(event.target)) {
+            if (this.showCalendar && calendarElement && !calendarElement.contains(event.target)) {
                 this.showCalendar = false;
+            }
+
+            const notificationElement = this.$el.querySelector('.notif-wrap');
+            if (this.showNotifications && notificationElement && !notificationElement.contains(event.target)) {
+                this.showNotifications = false;
             }
         }
     },
     mounted() {
         this.loadProfile();
-        window.addEventListener('storage', this.loadProfile);
-        window.addEventListener('focus', this.loadProfile);
+        this.loadReadNotifications();
+        this.fetchNotifications(true);
+        window.addEventListener('storage', this.handleStorageChange);
+        window.addEventListener('focus', this.handleWindowFocus);
         document.addEventListener('click', this.handleOutsideClick);
     },
     beforeUnmount() {
-        window.removeEventListener('storage', this.loadProfile);
-        window.removeEventListener('focus', this.loadProfile);
+        window.removeEventListener('storage', this.handleStorageChange);
+        window.removeEventListener('focus', this.handleWindowFocus);
         document.removeEventListener('click', this.handleOutsideClick);
     }
 };
@@ -342,8 +546,13 @@ export default {
     position: relative;
 }
 
+.notif-wrap {
+    position: relative;
+}
+
 .calendar-btn,
 .notif-btn {
+    position: relative;
     background: rgba(255, 255, 255, 0.18);
     border: none;
     width: 40px;
@@ -373,6 +582,29 @@ export default {
     background: rgba(255, 255, 255, 0.28);
 }
 
+.notif-btn.is-active {
+    background: rgba(255, 255, 255, 0.32);
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.45);
+}
+
+.notif-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: #ff8452;
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.2);
+}
+
 .calendar-popup {
     position: absolute;
     top: calc(100% + 12px);
@@ -384,6 +616,155 @@ export default {
     color: #3a2b1a;
     box-shadow: 0 18px 40px rgba(0, 0, 0, 0.2);
     border: 1px solid rgba(122, 74, 18, 0.12);
+}
+
+.notif-popup {
+    position: absolute;
+    top: calc(100% + 12px);
+    right: 0;
+    width: 340px;
+    max-height: 420px;
+    overflow: hidden;
+    border-radius: 22px;
+    background: rgba(255, 248, 240, 0.99);
+    color: #3a2b1a;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22);
+    border: 1px solid rgba(122, 74, 18, 0.12);
+}
+
+.notif-popup-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 18px 18px 14px;
+    border-bottom: 1px solid rgba(122, 74, 18, 0.12);
+}
+
+.notif-popup-header strong {
+    display: block;
+    font-size: 15px;
+    margin-bottom: 4px;
+}
+
+.notif-popup-header p {
+    margin: 0;
+    font-size: 12px;
+    color: rgba(58, 43, 26, 0.7);
+}
+
+.notif-clear-btn {
+    border: none;
+    background: rgba(138, 90, 32, 0.12);
+    color: #8a5a20;
+    border-radius: 999px;
+    padding: 8px 12px;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.notif-list {
+    max-height: 340px;
+    overflow-y: auto;
+    padding: 10px;
+}
+
+.notif-item {
+    width: 100%;
+    border: none;
+    background: rgba(255, 255, 255, 0.6);
+    border-radius: 16px;
+    padding: 14px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    text-align: left;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.notif-item + .notif-item {
+    margin-top: 10px;
+}
+
+.notif-item:hover {
+    transform: translateY(-1px);
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.1);
+}
+
+.notif-item.is-unread {
+    background: linear-gradient(135deg, rgba(255, 236, 214, 0.96), rgba(255, 248, 240, 0.96));
+}
+
+.notif-indicator {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-top: 7px;
+    flex-shrink: 0;
+    background: #b27722;
+    box-shadow: 0 0 0 5px rgba(178, 119, 34, 0.12);
+}
+
+.notif-item.severity-low .notif-indicator {
+    background: #db9e27;
+}
+
+.notif-item.severity-medium .notif-indicator {
+    background: #d97706;
+}
+
+.notif-item.severity-high .notif-indicator {
+    background: #dc2626;
+}
+
+.notif-item.severity-info .notif-indicator {
+    background: #2563eb;
+}
+
+.notif-content {
+    min-width: 0;
+    flex: 1;
+}
+
+.notif-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 6px;
+}
+
+.notif-row strong {
+    font-size: 14px;
+    color: #2f1f10;
+}
+
+.notif-row span {
+    font-size: 11px;
+    color: rgba(58, 43, 26, 0.65);
+    white-space: nowrap;
+}
+
+.notif-content p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.45;
+    color: rgba(58, 43, 26, 0.82);
+}
+
+.notif-state {
+    padding: 22px 18px 24px;
+    text-align: center;
+    font-size: 13px;
+    color: rgba(58, 43, 26, 0.7);
+}
+
+.notif-state.is-error {
+    color: #b91c1c;
 }
 
 .calendar-popup-header {
@@ -522,6 +903,13 @@ export default {
 
     .profile-name {
         font-size: 14px;
+    }
+
+    .notif-popup,
+    .calendar-popup {
+        right: auto;
+        left: 0;
+        width: min(340px, calc(100vw - 40px));
     }
 }
 </style>

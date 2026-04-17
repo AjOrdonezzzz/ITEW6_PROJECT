@@ -19,11 +19,13 @@ use App\Http\Controllers\Api\ViolationTypeController;
 use App\Http\Controllers\Api\StudentViolationController;
 use App\Http\Controllers\Api\FacultySubjectController;
 use App\Http\Controllers\Api\FacultyOrganizationController;
+use App\Http\Controllers\Api\NotificationController;
 
 Route::prefix('v1')->group(function () {
 
     // Dashboard Stats
     Route::get('dashboard/stats', [StudentController::class, 'stats']);
+    Route::get('notifications', [NotificationController::class, 'index']);
 
     // Students
     Route::apiResource('students', StudentController::class);
