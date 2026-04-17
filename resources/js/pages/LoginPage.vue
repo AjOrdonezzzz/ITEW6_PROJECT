@@ -76,6 +76,7 @@
 
 <script>
 import { getStoredRegisteredUser, setStoredUser } from '../utils/auth';
+import globalState from '../store/globalState';
 
 export default {
     name: 'LoginPage',
@@ -155,12 +156,15 @@ export default {
                         show: true
                     };
 
-                    setStoredUser({
+                    const user = {
                         username,
                         fullName: registeredUser?.fullName || username,
                         role,
                         rememberMe: this.form.remember
-                    });
+                    };
+
+                    setStoredUser(user);
+                    globalState.setUser(user);
 
                     this.form.password = '';
 

@@ -11,6 +11,7 @@ import ReportsPage from './pages/ReportsPage.vue';
 import SettingsPage from './pages/SettingsPage.vue';
 import ProfilePage from './pages/ProfilePage.vue';
 import { getStoredUser, isAdminUser } from './utils/auth';
+import globalState from './store/globalState';
 
 const routes = [
     {
@@ -73,7 +74,7 @@ const router = createRouter({
 });
 
 router.beforeEach((to, from, next) => {
-    const user = getStoredUser();
+    const user = globalState.state.user || getStoredUser();
 
     if (to.meta.requiresAuth && !user) {
         next('/');

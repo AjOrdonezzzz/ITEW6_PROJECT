@@ -79,11 +79,13 @@
 <script>
 import AppHeader from '../components/AppHeader.vue';
 import Sidebar from '../components/Sidebar.vue';
+import globalState from '../store/globalState';
+import { getStoredUser } from '../utils/auth';
 
 const DEFAULT_PROFILE = {
     fullName: 'Joana Lumogda',
     role: 'Student Admin',
-    email: 'joana@example.com',
+    email: 'student@example.com',
     phone: '09xx xxx xxxx',
     bio: 'CCS student dashboard administrator.',
     avatar: ''
@@ -100,6 +102,7 @@ export default {
             sidebarOpen: true,
             currentDate: '',
             searchQuery: '',
+            currentUser: globalState.state.user,
             form: { ...DEFAULT_PROFILE },
             savedMessage: ''
         };
@@ -134,11 +137,23 @@ export default {
             const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
             return new Date().toLocaleDateString('en-US', options);
         },
-        loadProfile() {
-            const savedProfile = JSON.parse(localStorage.getItem('profileData') || 'null');
-            if (savedProfile) {
-                this.form = { ...DEFAULT_PROFILE, ...savedProfile };
+        getProfileStorageKey() {
+            if (this.currentUser?.username) {
+                return `profileData:${this.currentUser.username}`;
             }
+            return 'profileData';
+        },
+        loadProfile() {
+            this.currentUser = getStoredUser();
+            const profileKey = this.getProfileStorageKey();
+            const savedProfile = JSON.parse(localStorage.getItem(profileKey) || 'null');
+
+            this.form = {
+                ...DEFAULT_PROFILE,
+                fullName: this.currentUser?.fullName || this.currentUser?.username || DEFAULT_PROFILE.fullName,
+                role: this.currentUser?.role || DEFAULT_PROFILE.role,
+                ...savedProfile
+            };
         },
         handleImageUpload(event) {
             const file = event.target.files?.[0];
@@ -151,8 +166,18 @@ export default {
             reader.readAsDataURL(file);
         },
         saveProfile() {
-            localStorage.setItem('profileData', JSON.stringify(this.form));
+            const profileKey = this.getProfileStorageKey();
+            localStorage.setItem(profileKey, JSON.stringify(this.form));
             this.savedMessage = 'Profile saved successfully.';
+
+            if (this.currentUser) {
+                const updatedUser = {
+                    ...this.currentUser,
+                    fullName: this.form.fullName
+                };
+                globalState.setUser(updatedUser);
+                this.currentUser = updatedUser;
+            }
 
             setTimeout(() => {
                 this.savedMessage = '';
@@ -162,6 +187,10 @@ export default {
     mounted() {
         this.currentDate = this.getFormattedDate();
         this.loadProfile();
+        window.addEventListener('storage', this.loadProfile);
+    },
+    beforeUnmount() {
+        window.removeEventListener('storage', this.loadProfile);
     }
 };
 </script>

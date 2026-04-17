@@ -76,7 +76,8 @@
 </template>
 
 <script>
-import { clearStoredUser, getStoredUser, isAdminUser } from '../utils/auth';
+import { clearStoredUser, isAdminUser } from '../utils/auth';
+import globalState from '../store/globalState';
 
 export default {
     name: 'Sidebar',
@@ -88,7 +89,6 @@ export default {
     },
     data() {
         return {
-            currentUser: getStoredUser(),
             menuItems: [
                 { id: 1, label: 'Dashboard', icon: 'dashboard', route: '/dashboard' },
                 { id: 2, label: 'Students', icon: 'students', route: '/students' },
@@ -101,25 +101,22 @@ export default {
     },
     computed: {
         visibleMenuItems() {
-            return this.menuItems.filter((item) => !item.adminOnly || isAdminUser(this.currentUser));
+            return this.menuItems.filter((item) => !item.adminOnly || isAdminUser(globalState.state.user));
         }
     },
     methods: {
-        syncCurrentUser() {
-            this.currentUser = getStoredUser();
-        },
         handleLogout() {
-            clearStoredUser();
+            globalState.clearUserState();
             this.$router.push('/');
         }
     },
     mounted() {
-        window.addEventListener('storage', this.syncCurrentUser);
-        window.addEventListener('focus', this.syncCurrentUser);
+        window.addEventListener('storage', globalState.refreshUser);
+        window.addEventListener('focus', globalState.refreshUser);
     },
     beforeUnmount() {
-        window.removeEventListener('storage', this.syncCurrentUser);
-        window.removeEventListener('focus', this.syncCurrentUser);
+        window.removeEventListener('storage', globalState.refreshUser);
+        window.removeEventListener('focus', globalState.refreshUser);
     }
 };
 </script>

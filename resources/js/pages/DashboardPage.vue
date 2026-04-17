@@ -4,7 +4,7 @@
 
         <div class="main-content">
             <app-header
-                title="Welcome, User!"
+                :title="welcomeTitle"
                 :subtitle="currentDate"
                 :search-query="searchQuery"
                 @update:search-query="searchQuery = $event"
@@ -94,6 +94,7 @@
 import AppHeader from '../components/AppHeader.vue';
 import Sidebar from '../components/Sidebar.vue';
 import api from '../services/api.js';
+import { getStoredUser } from '../utils/auth';
 
 export default {
     name: 'DashboardPage',
@@ -117,6 +118,15 @@ export default {
     },
 
     computed: {
+        currentUser() {
+            return getStoredUser() || {};
+        },
+
+        welcomeTitle() {
+            const name = this.currentUser.fullName || this.currentUser.username;
+            return name ? `Welcome, ${name}!` : 'Welcome, User!';
+        },
+
         filteredStats() {
             const query = this.searchQuery.trim().toLowerCase();
             if (!query) return this.stats;

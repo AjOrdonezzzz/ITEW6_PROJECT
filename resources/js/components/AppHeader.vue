@@ -141,6 +141,7 @@
 <script>
 import api from '../services/api';
 import { getStoredUser } from '../utils/auth';
+import globalState from '../store/globalState';
 
 const DEFAULT_PROFILE = {
     fullName: 'Welcome, User',
@@ -266,21 +267,29 @@ export default {
         }
     },
     methods: {
+        getProfileStorageKey() {
+            const user = globalState.state.user || getStoredUser();
+            return user?.username ? `profileData:${user.username}` : 'profileData';
+        },
         loadProfile() {
+            const storedUser = globalState.state.user || getStoredUser();
+            const profileKey = this.getProfileStorageKey();
+
             try {
-                const savedProfile = JSON.parse(localStorage.getItem('profileData') || 'null');
-                if (savedProfile) {
-                    this.profile = {
-                        fullName: savedProfile.fullName || DEFAULT_PROFILE.fullName,
-                        avatar: savedProfile.avatar || ''
-                    };
-                }
+                const savedProfile = JSON.parse(localStorage.getItem(profileKey) || 'null');
+                this.profile = {
+                    fullName: storedUser?.fullName || savedProfile?.fullName || DEFAULT_PROFILE.fullName,
+                    avatar: savedProfile?.avatar || ''
+                };
             } catch {
-                this.profile = { ...DEFAULT_PROFILE };
+                this.profile = {
+                    fullName: storedUser?.fullName || DEFAULT_PROFILE.fullName,
+                    avatar: ''
+                };
             }
         },
         getNotificationStorageKey() {
-            const user = getStoredUser();
+            const user = globalState.state.user || getStoredUser();
             const identifier = user?.username || user?.name || 'guest';
             return `${NOTIFICATION_STORAGE_PREFIX}:${identifier}`;
         },
