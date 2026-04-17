@@ -76,7 +76,7 @@
 </template>
 
 <script>
-import { clearStoredUser, isAdminUser } from '../utils/auth';
+import { isAdminUser } from '../utils/auth';
 import globalState from '../store/globalState';
 
 export default {
@@ -95,7 +95,8 @@ export default {
                 { id: 3, label: 'Violations', icon: 'violations', route: '/violations' },
                 { id: 4, label: 'Events', icon: 'events', route: '/events' },
                 { id: 5, label: 'Reports', icon: 'reports', route: '/reports', adminOnly: true },
-                { id: 6, label: 'Settings', icon: 'settings', route: '/settings' }
+                { id: 6, label: 'Users', icon: 'students', route: '/users', adminOnly: true },
+                { id: 7, label: 'Settings', icon: 'settings', route: '/settings' }
             ]
         };
     },
