@@ -8,6 +8,7 @@
 </head>
 <body>
     <div id="app">
+        // Testing the welcome page
     </div>
 </body>
 </html> 
