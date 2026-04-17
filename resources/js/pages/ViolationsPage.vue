@@ -96,6 +96,7 @@
                                 <th>Student Name</th>
                                 <th>Student Number</th>
                                 <th>Violation Type</th>
+                                <th>Description</th>
                                 <th>Date</th>
                                 <th>Status</th>
                                 <th>Actions</th>
@@ -106,6 +107,7 @@
                                 <td>{{ record.name }}</td>
                                 <td>{{ record.studentNumber }}</td>
                                 <td>{{ record.violation }}</td>
+                                <td>{{ record.description || '—' }}</td>
                                 <td>{{ record.date }}</td>
                                 <td>
                                     <div class="status-cell">
@@ -117,7 +119,7 @@
                                 </td>
                             </tr>
                             <tr v-if="!filteredRecords.length">
-                                <td colspan="6" class="empty-table-state">No violation reports found.</td>
+                                <td colspan="7" class="empty-table-state">No violation reports found.</td>
                             </tr>
                         </tbody>
                     </table>
@@ -223,7 +225,7 @@ export default {
             if (!query) return this.records;
 
             return this.records.filter((record) => {
-                return [record.name, record.studentNumber, record.violation, record.date, record.status]
+                return [record.name, record.studentNumber, record.violation, record.description, record.date, record.status]
                     .some((value) => String(value).toLowerCase().includes(query));
             });
         },
@@ -305,17 +307,20 @@ export default {
         viewStudentViolations(student) {
             // For now, just show an alert with violation details
             // In a real app, you might open a detailed modal
-            const violationDetails = student.violations.map(v =>
-                `${v.violationType.violation_name} (${this.formatDate(v.violation_date)}) - ${v.status}`
-            ).join('\n');
+            const violationDetails = student.violations.map((v) => {
+                const violationType = v.violationType || v.violation_type || this.violationTypes.find((type) => type.violation_type_id === v.violation_type_id) || {};
+                return `${violationType.violation_name || 'Unknown Violation'} (${this.formatDate(v.violation_date)}) - ${v.status}`;
+            }).join('\n');
 
             alert(`Violations for ${student.name}:\n\n${violationDetails}`);
         },
 
         mapViolation(violation) {
-            // Handle cases where relationships might not be loaded
+            // Handle cases where relationships might not be loaded.
             const student = violation.student || {};
-            const violationType = violation.violationType || {};
+            const relationViolationType = violation.violationType || violation.violation_type || {};
+            const lookupViolationType = this.violationTypes.find((type) => type.violation_type_id === violation.violation_type_id);
+            const violationType = relationViolationType.violation_name ? relationViolationType : lookupViolationType || {};
 
             const fullName = [student.first_name, student.middle_name ?? '', student.last_name]
                 .filter(Boolean).join(' ') || 'Unknown Student';
@@ -343,7 +348,7 @@ export default {
                 console.log('Fetching violations...');
                 const { data } = await api.get('/student-violations');
                 console.log('Violations data received:', data);
-                this.records = data.map(this.mapViolation);
+                this.records = data.map((item) => this.mapViolation(item));
                 console.log('Mapped records:', this.records);
             } catch (err) {
                 console.error('Failed to load violations:', err);
@@ -523,11 +528,11 @@ export default {
             }
         }
     },
-    mounted() {
+    async mounted() {
         this.currentDate = this.getFormattedDate();
         this.testApiConnection();
-        this.fetchViolations();
-        this.fetchViolationTypes();
+        await this.fetchViolationTypes();
+        await this.fetchViolations();
         this.fetchStudents();
     }
 };

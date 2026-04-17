@@ -143,7 +143,7 @@ import api from '../services/api';
 import { getStoredUser } from '../utils/auth';
 
 const DEFAULT_PROFILE = {
-    fullName: 'Joana Lumogda',
+    fullName: 'Welcome, User',
     avatar: ''
 };
 

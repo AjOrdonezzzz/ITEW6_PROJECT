@@ -56,7 +56,19 @@ class DatabaseSeeder extends Seeder
 
         $skills = Skill::factory(10)->create();
         $organizations = Organization::factory(5)->create();
-        $violations = ViolationType::factory(5)->create();
+
+        $violations = collect([
+            ['name' => 'Late Attendance', 'severity' => 'Low'],
+            ['name' => 'Absence Without Excuse', 'severity' => 'Medium'],
+            ['name' => 'Dress Code Violation', 'severity' => 'Low'],
+            ['name' => 'Academic Dishonesty', 'severity' => 'High'],
+            ['name' => 'Misconduct', 'severity' => 'High'],
+        ])->map(function (array $type) {
+            return ViolationType::updateOrCreate(
+                ['violation_name' => $type['name']],
+                ['severity_level' => $type['severity']]
+            );
+        });
 
         foreach ($students as $student) {
             $studentSkills = $skills->random(rand(1, 3));
