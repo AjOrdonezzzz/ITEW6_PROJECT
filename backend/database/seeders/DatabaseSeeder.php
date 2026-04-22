@@ -30,6 +30,7 @@ class DatabaseSeeder extends Seeder
         User::query()->updateOrCreate(
             ['email' => 'admin@example.com'],
             [
+                'username' => 'admin',
                 'name' => 'System Admin',
                 'role' => 'admin',
                 'password' => Hash::make('password123'),
@@ -39,6 +40,7 @@ class DatabaseSeeder extends Seeder
         User::query()->updateOrCreate(
             ['email' => 'user@example.com'],
             [
+                'username' => 'user',
                 'name' => 'Standard User',
                 'role' => 'user',
                 'password' => Hash::make('user123'),
@@ -53,7 +55,7 @@ class DatabaseSeeder extends Seeder
         $subjects = Subject::factory(8)->create();
 
         $students = Student::factory(1000)->create();
-
+    
         $skills = Skill::factory(10)->create();
         $organizations = Organization::factory(5)->create();
 

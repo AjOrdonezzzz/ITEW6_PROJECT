@@ -139,7 +139,7 @@
 </template>
 
 <script>
-import api from '../../../backend/resources/js/services/api';
+import axios from 'axios'; 
 import { getStoredUser } from '../utils/auth';
 import globalState from '../store/globalState';
 
@@ -313,27 +313,36 @@ export default {
             this.saveReadNotifications();
         },
         async fetchNotifications(force = false) {
-            if (this.notificationsLoading) {
-                return;
-            }
+        if (this.notificationsLoading) return;
+        if (!force && this.notifications.length) return;
 
-            if (!force && this.notifications.length) {
-                return;
-            }
+        this.notificationsLoading = true;
+        this.notificationsError = '';
+        
+        // Get the token from localStorage
+        const token = localStorage.getItem('user_token');
 
-            this.notificationsLoading = true;
-            this.notificationsError = '';
-
-            try {
-                const { data } = await api.get('/notifications');
-                this.notifications = Array.isArray(data?.notifications) ? data.notifications : [];
-                this.trimReadNotifications();
-            } catch (error) {
-                this.notificationsError = error?.response?.data?.message || 'Unable to load notifications right now.';
-            } finally {
-                this.notificationsLoading = false;
+        try {
+            // Use full URL and send the Bearer Token
+            const { data } = await axios.get('http://127.0.0.1:8000/api/v1/notifications', {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+            
+            this.notifications = Array.isArray(data) ? data : (Array.isArray(data?.notifications) ? data.notifications : []);
+            this.trimReadNotifications();
+        } catch (error) {
+            // If it's a 401, it means your token is expired or missing
+            if (error.response?.status === 401) {
+                this.notificationsError = 'Please log in again to see notifications.';
+            } else {
+                this.notificationsError = error?.response?.data?.message || 'Unable to load notifications.';
             }
-        },
+        } finally {
+            this.notificationsLoading = false;
+        }
+    },
         goBack() {
             if (window.history.length > 1) {
                 this.$router.back();

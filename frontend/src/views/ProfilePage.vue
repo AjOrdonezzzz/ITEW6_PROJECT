@@ -34,6 +34,8 @@
                     </section>
 
                     <section class="profile-card profile-form">
+                        <div v-if="isLoading && !form.email" class="loading-overlay">Loading...</div>
+                        
                         <div class="form-grid">
                             <label class="field">
                                 <span>Full name</span>
@@ -42,7 +44,7 @@
 
                             <label class="field">
                                 <span>Role</span>
-                                <input v-model="form.role" type="text" placeholder="Enter your role">
+                                <input v-model="form.role" type="text" placeholder="Enter your role" disabled class="disabled-input">
                             </label>
 
                             <label class="field">
@@ -62,7 +64,9 @@
                         </div>
 
                         <div class="actions">
-                            <button class="save-btn" @click="saveProfile">Save Profile</button>
+                            <button class="save-btn" @click="saveProfile" :disabled="isLoading">
+                                {{ isLoading ? 'Saving...' : 'Save Profile' }}
+                            </button>
                             <span v-if="savedMessage" class="saved-message">{{ savedMessage }}</span>
                         </div>
                     </section>
@@ -80,7 +84,6 @@
 import AppHeader from '../components/AppHeader.vue';
 import Sidebar from '../components/Sidebar.vue';
 import globalState from '../store/globalState';
-import { getStoredUser } from '../utils/auth';
 import axios from 'axios';
 
 export default {
@@ -91,8 +94,7 @@ export default {
             sidebarOpen: true,
             currentDate: '',
             searchQuery: '',
-            currentUser: globalState.state.user,
-            isLoading: false, // Added loading state
+            isLoading: false,
             form: {
                 fullName: '',
                 role: '',
@@ -104,14 +106,40 @@ export default {
             savedMessage: ''
         };
     },
+    computed: {
+        initials() {
+            if (!this.form.fullName) return 'SA';
+            return this.form.fullName
+                .split(' ')
+                .filter(Boolean)
+                .slice(0, 2)
+                .map((part) => part[0]?.toUpperCase() || '')
+                .join('');
+        },
+        matchesSearch() {
+            const query = this.searchQuery.trim().toLowerCase();
+            if (!query) return true;
+
+            return [
+                this.form.fullName,
+                this.form.role,
+                this.form.email,
+                this.form.phone,
+                this.form.bio
+            ].some((value) => String(value || '').toLowerCase().includes(query));
+        }
+    },
     methods: {
         async fetchProfile() {
             this.isLoading = true;
+            const token = localStorage.getItem('user_token');
+            
             try {
-                // Fetch the latest user data from Laravel
-                const response = await axios.get('http://127.0.0.1:8000/api/user-profile');
+                const response = await axios.get('http://127.0.0.1:8000/api/v1/user-profile', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                
                 const data = response.data;
-
                 this.form = {
                     fullName: data.name || '',
                     role: data.role || '',
@@ -121,7 +149,7 @@ export default {
                     avatar: data.avatar_url || ''
                 };
             } catch (error) {
-                console.error("Failed to load profile:", error);
+                console.error("Profile load failed:", error);
             } finally {
                 this.isLoading = false;
             }
@@ -129,26 +157,30 @@ export default {
 
         async saveProfile() {
             this.isLoading = true;
+            const token = localStorage.getItem('user_token');
+
             try {
-                const response = await axios.put('http://127.0.0.1:8000/api/user-profile/update', {
+                await axios.put('http://127.0.0.1:8000/api/v1/user-profile/update', {
                     name: this.form.fullName,
                     email: this.form.email,
                     phone: this.form.phone,
                     bio: this.form.bio,
-                    // Handle avatar separately if it's a base64 string or file
+                }, {
+                    headers: { Authorization: `Bearer ${token}` }
                 });
 
                 this.savedMessage = 'Profile updated successfully!';
                 
-                // Update Global State so the Sidebar/Header shows the new name immediately
+                // Update Global State so Header/Sidebar reflect changes
                 globalState.setUser({
                     ...globalState.state.user,
                     fullName: this.form.fullName
-                }, localStorage.getItem('user_token'));
+                }, token);
 
-                setTimeout(() => this.savedMessage = '', 3000);
+                setTimeout(() => { this.savedMessage = ''; }, 3000);
             } catch (error) {
                 this.savedMessage = 'Error updating profile.';
+                console.error(error);
             } finally {
                 this.isLoading = false;
             }
@@ -157,9 +189,6 @@ export default {
         handleImageUpload(event) {
             const file = event.target.files?.[0];
             if (!file) return;
-
-            // Preview logic remains the same, but you'll eventually want 
-            // to send this file to Laravel via FormData
             const reader = new FileReader();
             reader.onload = () => { this.form.avatar = reader.result; };
             reader.readAsDataURL(file);
@@ -172,12 +201,13 @@ export default {
     },
     mounted() {
         this.currentDate = this.getFormattedDate();
-        this.fetchProfile(); // Load from API on mount
+        this.fetchProfile();
     }
 };
 </script>
 
 <style scoped>
+/* Keeping your existing styles */
 .profile-layout {
     display: flex;
     min-height: 100vh;
@@ -217,7 +247,7 @@ export default {
 }
 
 .empty-state {
-    padding: 18px 20px;
+    padding: 40px;
     border-radius: 18px;
     background: rgba(255, 255, 255, 0.9);
     color: #7a4a12;
@@ -230,6 +260,7 @@ export default {
     border-radius: 22px;
     padding: 24px;
     box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12);
+    position: relative;
 }
 
 .profile-preview {
@@ -279,6 +310,7 @@ export default {
 
 .profile-preview p {
     color: #666;
+    text-transform: capitalize;
 }
 
 .form-grid {
@@ -308,6 +340,12 @@ export default {
     font: inherit;
 }
 
+.disabled-input {
+    background-color: #f5f5f5;
+    cursor: not-allowed;
+    color: #888;
+}
+
 .field-full {
     grid-column: 1 / -1;
 }
@@ -320,14 +358,20 @@ export default {
 }
 
 .save-btn {
-    padding: 12px 20px;
+    padding: 12px 24px;
     border: none;
     border-radius: 999px;
-    background: linear-gradient(135deg, #a89080 0%, #8a7a6a 100%);
+    background: linear-gradient(135deg, #8a5a20 0%, #5e3a12 100%);
     color: white;
     font: inherit;
     font-weight: 600;
     cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.save-btn:disabled {
+    opacity: 0.6;
+    cursor: wait;
 }
 
 .saved-message {
@@ -338,21 +382,6 @@ export default {
 @media (max-width: 900px) {
     .profile-grid {
         grid-template-columns: 1fr;
-    }
-}
-
-@media (max-width: 768px) {
-    .profile-content {
-        padding-left: 20px;
-        padding-right: 20px;
-    }
-
-    .form-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .page-title {
-        font-size: 30px;
     }
 }
 </style>

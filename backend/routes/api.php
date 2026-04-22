@@ -23,6 +23,7 @@ use App\Http\Controllers\Api\StudentViolationController;
 use App\Http\Controllers\Api\FacultySubjectController;
 use App\Http\Controllers\Api\FacultyOrganizationController;
 use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\ProfileController;
 
 Route::get('/test', function () {
     return response()->json(['message' => 'Hello from API!']);

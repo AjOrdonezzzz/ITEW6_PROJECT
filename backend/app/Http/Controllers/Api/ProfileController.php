@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 
 class ProfileController extends Controller
 {
@@ -13,6 +15,7 @@ class ProfileController extends Controller
      */
     public function show()
     {
+        // returns the currently logged-in user (from the Sanctum token)
         return response()->json(Auth::user());
     }
 
@@ -23,20 +26,39 @@ class ProfileController extends Controller
     {
         $user = Auth::user();
 
-        // 1. Validate the data
+        // 1. Validate the incoming data from Vue
         $validated = $request->validate([
-            'name'  => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,' . $user->id,
-            'phone' => 'nullable|string|max:20',
-            'bio'   => 'nullable|string|max:500',
+            'name'     => 'required|string|max:255',
+            'email'    => ['required', 'email', Rule::unique('users')->ignore($user->id)],
+            'phone'    => 'nullable|string|max:20',
+            'bio'      => 'nullable|string|max:500',
+            // Allow them to update password only if they provide one
+            'password' => 'nullable|string|min:8|confirmed',
         ]);
 
-        // 2. Update the user record
+        // 2. Handle Password Hashing if a new one is provided
+        if ($request->filled('password')) {
+            $validated['password'] = Hash::make($request->password);
+        } else {
+            // Remove password from array if not being updated
+            unset($validated['password']);
+        }
+
+        // 3. Update the database record
         $user->update($validated);
 
+        // 4. Return response structured for your Vue globalState
         return response()->json([
             'message' => 'Profile updated successfully!',
-            'user'    => $user
+            'user' => [
+                'id'       => $user->id,
+                'username' => $user->username,
+                'fullName' => $user->name,
+                'email'    => $user->email,
+                'role'     => $user->role,
+                'phone'    => $user->phone,
+                'bio'      => $user->bio,
+            ]
         ]);
     }
 }
