@@ -108,10 +108,11 @@ export default {
             users: [],
             isLoading: false,
             form: {
-                name: '',     // Changed from fullName to match Laravel convention
-                username: '',
-                password: '',
-                role: 'user'
+            name: '',
+            username: '',
+            email: '', 
+            password: '',
+            role: 'user'
             },
             message: '',
             messageType: '' 
@@ -143,23 +144,21 @@ export default {
 
         // POST new user to Laravel
         async handleCreateUser() {
-            this.message = '';
             this.isLoading = true;
-
+            this.message = '';
+            
             try {
                 const response = await api.post('/users', this.form);
+                this.users.push(response.data); // Add new user to list
+                this.message = "User created successfully!";
+                this.messageType = "success";
                 
-                // Add the new user to the list locally so we don't have to re-fetch everything
-                this.users.push(response.data.user || response.data);
-                
-                this.message = 'User created successfully.';
-                this.messageType = 'success';
-                
-                // Reset form
-                this.form = { name: '', username: '', password: '', role: 'user' };
+                // Reset Form
+                this.form = { name: '', username: '', email: '', password: '', role: 'user' };
             } catch (error) {
-                this.message = error.response?.data?.message || 'Failed to create user.';
-                this.messageType = 'error';
+                // This will catch that 500 error and show you the reason
+                this.message = error.response?.data?.message || "Check your backend logs.";
+                this.messageType = "error";
             } finally {
                 this.isLoading = false;
             }

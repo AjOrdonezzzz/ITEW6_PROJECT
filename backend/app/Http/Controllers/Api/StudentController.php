@@ -15,7 +15,8 @@ class StudentController extends Controller
         $query = Student::with([
             'section',
             'guardian',
-            'skills',  // ← Add this to load skills
+            'skills.skill',  
+            'skills',
             'violations'
         ]);
 
@@ -33,7 +34,11 @@ class StudentController extends Controller
         if ($request->has('skill')) {
             $skill = $request->input('skill');
             $query->whereHas('skills', function ($q) use ($skill) {
-                $q->where('skill_name', 'like', "%{$skill}%");
+                // This looks at the 'skill()' relationship in your StudentSkill model
+                $q->whereHas('skill', function ($subQ) use ($skill) {
+                    // This is where the actual column 'skill_name' lives
+                    $subQ->whereRaw('LOWER(skill_name) LIKE ?', ["%" . strtolower($skill) . "%"]);
+                });
             });
         }
 
@@ -165,13 +170,15 @@ public function destroy(int $id): JsonResponse
     // GET /api/v1/dashboard/stats
     public function stats(): JsonResponse
     {
+        // SQLite doesn't have CURDATE, we use strftime or just calculate in PHP
+        $avgAge = Student::all()->map(function ($student) {
+            return \Carbon\Carbon::parse($student->birthdate)->age;
+        })->avg();
+
         return response()->json([
             'total_students'  => Student::count(),
             'active_profiles' => Student::where('status', 'Active')->count(),
-            'average_age'     => round(
-                Student::selectRaw('AVG(TIMESTAMPDIFF(YEAR, birthdate, CURDATE())) as avg_age')
-                    ->value('avg_age')
-            ),
+            'average_age'     => round($avgAge ?? 0),
         ]);
     }
 }
