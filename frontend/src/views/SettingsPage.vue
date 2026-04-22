@@ -37,8 +37,8 @@
 <script>
 import AppHeader from '../components/AppHeader.vue';
 import Sidebar from '../components/Sidebar.vue';
-import globalState from '../../../backend/resources/js/store/globalState';
-import { getStoredUser } from '../../../backend/resources/js/utils/auth';
+import globalState from '../store/globalState';
+import { getStoredUser } from '../utils/auth';
 
 export default {
     name: 'SettingsPage',

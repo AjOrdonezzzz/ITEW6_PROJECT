@@ -33,15 +33,20 @@ const router = createRouter({
 
 // 3. Navigation Guard (Corrected version)
 router.beforeEach((to, from) => {
-    // For now, since your auth utils are commented out, 
-    // we return true (allow all) so the app doesn't crash.
-    return true; 
+    const isAuthenticated = !!localStorage.getItem('user_token');
+    const isAdmin = localStorage.getItem('user_role') === 'admin';
 
-    /* Once you fix your auth utils, use this logic:
-    const user = getStoredUser();
-    if (to.meta.requiresAuth && !user) return { name: 'Login' };
-    if (to.path === '/' && user) return { name: 'Dashboard' };
-    */
+    if (to.meta.requiresAuth && !isAuthenticated) {
+        return { name: 'Login' };
+    }
+    if (to.name === 'Login' && isAuthenticated) {
+        return { name: 'Dashboard' };
+    }
+    if (to.meta.requiresAdmin && !isAdmin) {
+        return { name: 'Dashboard' };
+    }
+
+    return true;
 });
 
 export default router;

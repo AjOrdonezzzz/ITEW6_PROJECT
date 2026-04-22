@@ -79,118 +79,100 @@
 <script>
 import AppHeader from '../components/AppHeader.vue';
 import Sidebar from '../components/Sidebar.vue';
-import globalState from '../../../backend/resources/js/store/globalState';
-import { getStoredUser } from '../../../backend/resources/js/utils/auth';
-
-const DEFAULT_PROFILE = {
-    fullName: 'Joana Lumogda',
-    role: 'Student Admin',
-    email: 'student@example.com',
-    phone: '09xx xxx xxxx',
-    bio: 'CCS student dashboard administrator.',
-    avatar: ''
-};
+import globalState from '../store/globalState';
+import { getStoredUser } from '../utils/auth';
+import axios from 'axios';
 
 export default {
     name: 'ProfilePage',
-    components: {
-        AppHeader,
-        Sidebar
-    },
+    components: { AppHeader, Sidebar },
     data() {
         return {
             sidebarOpen: true,
             currentDate: '',
             searchQuery: '',
             currentUser: globalState.state.user,
-            form: { ...DEFAULT_PROFILE },
+            isLoading: false, // Added loading state
+            form: {
+                fullName: '',
+                role: '',
+                email: '',
+                phone: '',
+                bio: '',
+                avatar: ''
+            },
             savedMessage: ''
         };
     },
-    computed: {
-        initials() {
-            return this.form.fullName
-                .split(' ')
-                .filter(Boolean)
-                .slice(0, 2)
-                .map((part) => part[0]?.toUpperCase() || '')
-                .join('') || 'UP';
-        },
-        matchesSearch() {
-            const query = this.searchQuery.trim().toLowerCase();
-            if (!query) return true;
-
-            return [
-                this.form.fullName,
-                this.form.role,
-                this.form.email,
-                this.form.phone,
-                this.form.bio,
-                'profile',
-                'picture',
-                'upload'
-            ].some((value) => String(value).toLowerCase().includes(query));
-        }
-    },
     methods: {
-        getFormattedDate() {
-            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-            return new Date().toLocaleDateString('en-US', options);
-        },
-        getProfileStorageKey() {
-            if (this.currentUser?.username) {
-                return `profileData:${this.currentUser.username}`;
-            }
-            return 'profileData';
-        },
-        loadProfile() {
-            this.currentUser = getStoredUser();
-            const profileKey = this.getProfileStorageKey();
-            const savedProfile = JSON.parse(localStorage.getItem(profileKey) || 'null');
+        async fetchProfile() {
+            this.isLoading = true;
+            try {
+                // Fetch the latest user data from Laravel
+                const response = await axios.get('http://127.0.0.1:8000/api/user-profile');
+                const data = response.data;
 
-            this.form = {
-                ...DEFAULT_PROFILE,
-                fullName: this.currentUser?.fullName || this.currentUser?.username || DEFAULT_PROFILE.fullName,
-                role: this.currentUser?.role || DEFAULT_PROFILE.role,
-                ...savedProfile
-            };
+                this.form = {
+                    fullName: data.name || '',
+                    role: data.role || '',
+                    email: data.email || '',
+                    phone: data.phone || '',
+                    bio: data.bio || '',
+                    avatar: data.avatar_url || ''
+                };
+            } catch (error) {
+                console.error("Failed to load profile:", error);
+            } finally {
+                this.isLoading = false;
+            }
         },
+
+        async saveProfile() {
+            this.isLoading = true;
+            try {
+                const response = await axios.put('http://127.0.0.1:8000/api/user-profile/update', {
+                    name: this.form.fullName,
+                    email: this.form.email,
+                    phone: this.form.phone,
+                    bio: this.form.bio,
+                    // Handle avatar separately if it's a base64 string or file
+                });
+
+                this.savedMessage = 'Profile updated successfully!';
+                
+                // Update Global State so the Sidebar/Header shows the new name immediately
+                globalState.setUser({
+                    ...globalState.state.user,
+                    fullName: this.form.fullName
+                }, localStorage.getItem('user_token'));
+
+                setTimeout(() => this.savedMessage = '', 3000);
+            } catch (error) {
+                this.savedMessage = 'Error updating profile.';
+            } finally {
+                this.isLoading = false;
+            }
+        },
+
         handleImageUpload(event) {
             const file = event.target.files?.[0];
             if (!file) return;
 
+            // Preview logic remains the same, but you'll eventually want 
+            // to send this file to Laravel via FormData
             const reader = new FileReader();
-            reader.onload = () => {
-                this.form.avatar = reader.result;
-            };
+            reader.onload = () => { this.form.avatar = reader.result; };
             reader.readAsDataURL(file);
         },
-        saveProfile() {
-            const profileKey = this.getProfileStorageKey();
-            localStorage.setItem(profileKey, JSON.stringify(this.form));
-            this.savedMessage = 'Profile saved successfully.';
 
-            if (this.currentUser) {
-                const updatedUser = {
-                    ...this.currentUser,
-                    fullName: this.form.fullName
-                };
-                globalState.setUser(updatedUser);
-                this.currentUser = updatedUser;
-            }
-
-            setTimeout(() => {
-                this.savedMessage = '';
-            }, 2000);
+        getFormattedDate() {
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            return new Date().toLocaleDateString('en-US', options);
         }
     },
     mounted() {
         this.currentDate = this.getFormattedDate();
-        this.loadProfile();
-        window.addEventListener('storage', this.loadProfile);
-    },
-    beforeUnmount() {
-        window.removeEventListener('storage', this.loadProfile);
+        this.fetchProfile(); // Load from API on mount
     }
 };
 </script>

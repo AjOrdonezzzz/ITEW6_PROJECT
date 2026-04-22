@@ -1,7 +1,10 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+// Import your new Auth controller
+use App\Http\Controllers\Auth\LoginController;
 
+// Import your existing API controllers
 use App\Http\Controllers\Api\StudentController;
 use App\Http\Controllers\Api\GuardianController;
 use App\Http\Controllers\Api\DepartmentController;
@@ -25,69 +28,48 @@ Route::get('/test', function () {
     return response()->json(['message' => 'Hello from API!']);
 });
 
-Route::prefix('v1')->group(function () {
+// The login route must be public so users can actually log in!
+Route::post('/login', [LoginController::class, 'login']);
 
-    // Dashboard Stats
+
+// We use 'auth:sanctum' to ensure only logged-in users with a token can enter
+
+Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
+
     Route::get('dashboard/stats', [StudentController::class, 'stats']);
     Route::get('notifications', [NotificationController::class, 'index']);
 
-    // Students
     Route::apiResource('students', StudentController::class);
     Route::get('students/{id}/violations', [StudentController::class, 'violations']);
     Route::get('students/{id}/subjects',   [StudentController::class, 'subjects']);
     Route::get('students/{id}/skills',     [StudentController::class, 'skills']);
     Route::get('students/{id}/awards',     [StudentController::class, 'awards']);
 
-    // Guardians
-    Route::apiResource('guardians', GuardianController::class);
-
-    // Departments
-    Route::apiResource('departments', DepartmentController::class);
-
-    // Faculty
     Route::apiResource('faculty', FacultyController::class);
-    Route::get('faculty/{id}/subjects',      [FacultyController::class, 'subjects']);
-    Route::get('faculty/{id}/organizations', [FacultyController::class, 'organizations']);
-    Route::get('faculty/{id}/sections',      [FacultyController::class, 'sections']);
-
-    // Sections
+    Route::apiResource('departments', DepartmentController::class);
     Route::apiResource('sections', SectionController::class);
-    Route::get('sections/{id}/students', [SectionController::class, 'students']);
-
-    // Subjects
     Route::apiResource('subjects', SubjectController::class);
+    
 
-    // Student Subjects (Grades)
+    Route::apiResource('guardians', GuardianController::class);
     Route::apiResource('student-subjects', StudentSubjectController::class);
-
-    // Academic Awards
     Route::apiResource('academic-awards', AcademicAwardController::class);
-
-    // Organizations
     Route::apiResource('organizations', OrganizationController::class);
-
-    // Student Organizations
     Route::apiResource('student-organizations', StudentOrganizationController::class);
-
-    // Non Academic Activities
     Route::apiResource('non-academic-activities', NonAcademicActivityController::class);
 
-    // Skills
+
     Route::apiResource('skills', SkillController::class);
-
-    // Student Skills
     Route::apiResource('student-skills', StudentSkillController::class);
-
-    // Violation Types
     Route::apiResource('violation-types', ViolationTypeController::class);
-
-    // Student Violations
     Route::apiResource('student-violations', StudentViolationController::class);
 
-    // Faculty Subjects
+
     Route::apiResource('faculty-subjects', FacultySubjectController::class);
-
-    // Faculty Organizations
     Route::apiResource('faculty-organizations', FacultyOrganizationController::class);
+    
+    Route::get('/user-profile', [ProfileController::class, 'show']);
+    Route::put('/user-profile/update', [ProfileController::class, 'update']);
 
+    Route::post('/logout', [LoginController::class, 'logout']);
 });

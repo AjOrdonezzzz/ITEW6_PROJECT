@@ -80,7 +80,7 @@
 </template>
 
 <script>
-import { REGISTERED_USER_STORAGE_KEY } from '../../../backend/resources/js/utils/auth';
+import { REGISTERED_USER_STORAGE_KEY } from '../utils/auth';
 
 export default {
     name: 'RegisterPage',

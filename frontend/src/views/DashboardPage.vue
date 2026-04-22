@@ -94,7 +94,7 @@
 import AppHeader from '../components/AppHeader.vue';
 import Sidebar from '../components/Sidebar.vue';
 import api from '../../../backend/resources/js/services/api.js';
-import { getStoredUser } from '../../../backend/resources/js/utils/auth';
+import { getStoredUser } from '../utils/auth';
 
 export default {
     name: 'DashboardPage',

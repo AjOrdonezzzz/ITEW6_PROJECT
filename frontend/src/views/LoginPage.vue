@@ -1,3 +1,4 @@
+
 <template>
     <div class="login-page">
         <div class="login-left">
@@ -69,8 +70,8 @@
 </template>
 
 <script>
-import { findManagedUser, setStoredUser } from '../../../backend/resources/js/utils/auth';
-import globalState from '../../../backend/resources/js/store/globalState';
+import globalState from '../store/globalState';
+import axios from 'axios';
 
 export default {
     name: 'LoginPage',
@@ -110,54 +111,49 @@ export default {
 
             return !this.errors.username && !this.errors.password;
         },
-        handleLogin() {
+        async handleLogin() {
             if (!this.validateForm()) return;
 
             this.isLoading = true;
+            this.message.show = false;
 
-            setTimeout(() => {
-                const username = this.form.username.trim();
-                const password = this.form.password;
-                const matchedUser = findManagedUser(username);
+            try {
+                // 1. Send the data to your Laravel API
+                const response = await axios.post('http://127.0.0.1:8000/api/login', {
+                    username: this.form.username,
+                    password: this.form.password
+                });
 
-                if (
-                    matchedUser &&
-                    matchedUser.password === password &&
-                    matchedUser.status === 'active'
-                ) {
-                    const user = {
-                        id: matchedUser.id,
-                        username: matchedUser.username,
-                        fullName: matchedUser.fullName,
-                        role: matchedUser.role,
-                        rememberMe: this.form.remember
-                    };
+                // 2. Laravel returns the user and a token
+                const { user, token } = response.data;
 
-                    this.message = {
-                        text: `Welcome back, ${matchedUser.fullName}!`,
-                        type: 'success',
-                        show: true
-                    };
+                this.message = {
+                    text: `Welcome back, ${user.fullName}!`,
+                    type: 'success',
+                    show: true
+                };
 
-                    setStoredUser(user);
-                    globalState.setUser(user);
+                // 3. Save to localStorage for the Navigation Guard
+                localStorage.setItem('user_token', token);
+                localStorage.setItem('user_role', user.role);
+                localStorage.setItem('user', JSON.stringify(user));
 
-                    this.form.password = '';
+                // 4. Redirect
+                setTimeout(() => {
+                    this.$router.push('/dashboard');
+                }, 800);
 
-                    setTimeout(() => {
-                        this.$router.push('/dashboard');
-                    }, 800);
-                } else {
-                    this.message = {
-                        text: 'Invalid username or password.',
-                        type: 'error',
-                        show: true
-                    };
-                    this.errors.password = 'Incorrect password';
-                }
-
+            } catch (error) {
+                console.error('Login error:', error);
+                this.message = {
+                    text: error.response?.data?.message || 'Unauthorized: Invalid username or password.',
+                    type: 'error',
+                    show: true
+                };
+                this.errors.password = 'Check credentials';
+            } finally {
                 this.isLoading = false;
-            }, 500);
+            }
         },
         loadSavedUser() {
             const savedUser = localStorage.getItem('user');

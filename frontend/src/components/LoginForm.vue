@@ -1,3 +1,4 @@
+
 <template>
     <div class="login-wrapper">
         <div class="login-container">
@@ -60,6 +61,7 @@
 </template>
 
 <script>
+import axios from 'axios';
 export default {
     name: 'LoginForm',
     data() {
@@ -114,44 +116,50 @@ export default {
 
             return !this.errors.username && !this.errors.password;
         },
-        handleLogin() {
-            if (!this.validateForm()) return;
 
-            this.isLoading = true;
 
+    // Inside your methods:
+    async handleLogin() {
+        if (!this.validateForm()) return;
+
+        this.isLoading = true;
+        this.message.show = false;
+
+        try {
+            // 1. Send request to Laravel
+            const response = await axios.post('http://127.0.0.1:8000/api/login', {
+                username: this.form.username,
+                password: this.form.password
+            });
+
+            // 2. If successful, save the token and user info
+            // We use the keys your Navigation Guard is looking for:
+            localStorage.setItem('user_token', response.data.token);
+            localStorage.setItem('user_role', response.data.user.role); // e.g., 'admin' or 'user'
+            localStorage.setItem('user', JSON.stringify(response.data.user));
+
+            this.message = {
+                text: `Welcome back, ${response.data.user.username}! 🎉`,
+                type: 'success',
+                show: true
+            };
+
+            // 3. Redirect to Dashboard after a short delay
             setTimeout(() => {
-                const username = this.form.username.trim();
-                const password = this.form.password;
+                this.$router.push('/dashboard');
+            }, 1500);
 
-                if (this.validUsers[username] && this.validUsers[username] === password) {
-                    this.message = {
-                        text: `Welcome back, ${username}! 🎉`,
-                        type: 'success',
-                        show: true
-                    };
-
-                    localStorage.setItem('user', JSON.stringify({
-                        username: username,
-                        rememberMe: this.form.remember
-                    }));
-
-                    this.form.password = '';
-                    
-                    setTimeout(() => {
-                        this.message.show = false;
-                    }, 3000);
-                } else {
-                    this.message = {
-                        text: 'Invalid username or password.',
-                        type: 'error',
-                        show: true
-                    };
-                    this.errors.password = 'Incorrect password';
-                }
-
-                this.isLoading = false;
-            }, 800);
-        },
+        } catch (error) {
+            console.error('Login error:', error);
+            this.message = {
+                text: error.response?.data?.message || 'Invalid credentials or server error.',
+                type: 'error',
+                show: true
+            };
+        } finally {
+            this.isLoading = false;
+        }
+    },
         loadSavedUser() {
             const savedUser = localStorage.getItem('user');
             if (savedUser) {

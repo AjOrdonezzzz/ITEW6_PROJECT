@@ -140,8 +140,8 @@
 
 <script>
 import api from '../../../backend/resources/js/services/api';
-import { getStoredUser } from '../../../backend/resources/js/utils/auth';
-import globalState from '../../../backend/resources/js/store/globalState';
+import { getStoredUser } from '../utils/auth';
+import globalState from '../store/globalState';
 
 const DEFAULT_PROFILE = {
     fullName: 'Welcome, User',

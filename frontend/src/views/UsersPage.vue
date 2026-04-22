@@ -88,7 +88,6 @@
 <script>
 import AppHeader from '../components/AppHeader.vue';
 import Sidebar from '../components/Sidebar.vue';
-import { getManagedUsers, saveManagedUsers } from '../../../backend/resources/js/utils/auth';
 
 export default {
     name: 'UsersPage',
