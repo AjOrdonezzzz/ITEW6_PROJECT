@@ -71,6 +71,9 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
     
     Route::get('/user-profile', [ProfileController::class, 'show']);
     Route::put('/user-profile/update', [ProfileController::class, 'update']);
+    Route::get('/users', [ProfileController::class, 'index']);      // List all users
+    Route::post('/users', [ProfileController::class, 'store']);    // Create new user
+    Route::delete('/users/{id}', [ProfileController::class, 'destroy']); // Delete user
 
     Route::post('/logout', [LoginController::class, 'logout']);
 });

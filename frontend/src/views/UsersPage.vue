@@ -22,34 +22,41 @@
                     <section class="user-form-card">
                         <h3>Create User</h3>
 
-                        <form @submit.prevent="handleCreateUser">
-                            <div class="form-group">
-                                <label>Full Name</label>
-                                <input v-model="form.fullName" type="text">
-                            </div>
+                    <form @submit.prevent="handleCreateUser">
+                        <div class="form-group">
+                            <label>Full Name</label>
+                            <input v-model="form.name" type="text" placeholder="Juan Dela Cruz">
+                        </div>
 
-                            <div class="form-group">
-                                <label>Username</label>
-                                <input v-model="form.username" type="text">
-                            </div>
+                        <div class="form-group">
+                            <label>Username</label>
+                            <input v-model="form.username" type="text" placeholder="juan123">
+                        </div>
 
-                            <div class="form-group">
-                                <label>Password</label>
-                                <input v-model="form.password" type="password">
-                            </div>
+                        <div class="form-group">
+                            <label>Email Address</label>
+                            <input v-model="form.email" type="email" placeholder="juan@example.com">
+                        </div>
 
-                            <div class="form-group">
-                                <label>Role</label>
-                                <select v-model="form.role">
-                                    <option value="user">User</option>
-                                    <option value="admin">Admin</option>
-                                </select>
-                            </div>
+                        <div class="form-group">
+                            <label>Password</label>
+                            <input v-model="form.password" type="password" placeholder="••••••••">
+                        </div>
 
-                            <button type="submit" class="primary-btn">Add User</button>
+                        <div class="form-group">
+                            <label>Role</label>
+                            <select v-model="form.role">
+                                <option value="user">User</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                        </div>
 
-                            <p v-if="message" class="form-message">{{ message }}</p>
-                        </form>
+                        <button type="submit" class="primary-btn" :disabled="isLoading">
+                            {{ isLoading ? 'Creating User...' : 'Add User' }}
+                        </button>
+
+                        <p v-if="message" :class="['form-message', messageType]">{{ message }}</p>
+                    </form>
                     </section>
 
                     <section class="user-list-card">
@@ -58,7 +65,7 @@
                         <div v-if="filteredUsers.length" class="user-list">
                             <div v-for="user in filteredUsers" :key="user.id" class="user-row">
                                 <div>
-                                    <strong>{{ user.fullName }}</strong>
+                                    <strong>{{ user.name }}</strong>
                                     <p>@{{ user.username }}</p>
                                 </div>
 
@@ -88,93 +95,94 @@
 <script>
 import AppHeader from '../components/AppHeader.vue';
 import Sidebar from '../components/Sidebar.vue';
+import api from '../services/api.js'; 
 
 export default {
     name: 'UsersPage',
-    components: {
-        AppHeader,
-        Sidebar
-    },
+    components: { AppHeader, Sidebar },
     data() {
         return {
             sidebarOpen: true,
             currentDate: '',
             searchQuery: '',
             users: [],
+            isLoading: false,
             form: {
-                fullName: '',
+                name: '',     // Changed from fullName to match Laravel convention
                 username: '',
                 password: '',
                 role: 'user'
             },
-            message: ''
+            message: '',
+            messageType: '' 
         };
     },
     computed: {
         filteredUsers() {
             const query = this.searchQuery.trim().toLowerCase();
-
             if (!query) return this.users;
-
             return this.users.filter((user) =>
-                [user.fullName, user.username, user.role]
-                    .some((value) => String(value).toLowerCase().includes(query))
+                [user.name, user.username, user.role]
+                    .some((value) => String(value ?? '').toLowerCase().includes(query))
             );
         }
     },
     methods: {
-        loadUsers() {
-            this.users = getManagedUsers();
+        // GET all users from Laravel
+        async loadUsers() {
+            try {
+                const response = await api.get('/users'); 
+                // Note: If your api.js baseURL doesn't have /v1, use api.get('/v1/users')
+                this.users = response.data;
+            } catch (error) {
+                console.error("Failed to load users:", error);
+                this.message = "Could not fetch user list.";
+                this.messageType = 'error';
+            }
         },
+
+        // POST new user to Laravel
+        async handleCreateUser() {
+            this.message = '';
+            this.isLoading = true;
+
+            try {
+                const response = await api.post('/users', this.form);
+                
+                // Add the new user to the list locally so we don't have to re-fetch everything
+                this.users.push(response.data.user || response.data);
+                
+                this.message = 'User created successfully.';
+                this.messageType = 'success';
+                
+                // Reset form
+                this.form = { name: '', username: '', password: '', role: 'user' };
+            } catch (error) {
+                this.message = error.response?.data?.message || 'Failed to create user.';
+                this.messageType = 'error';
+            } finally {
+                this.isLoading = false;
+            }
+        },
+
+        // DELETE user from Laravel
+        async deleteUser(userId) {
+            if (!confirm('Are you sure you want to delete this user?')) return;
+
+            try {
+                await api.delete(`/users/${userId}`);
+                this.users = this.users.filter((user) => user.id !== userId);
+                this.message = "User removed.";
+                this.messageType = 'success';
+            } catch (error) {
+                this.message = "Failed to delete user.";
+                this.messageType = 'error';
+            }
+        },
+
         getFormattedDate() {
             const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
             return new Date().toLocaleDateString('en-US', options);
-        },
-        handleCreateUser() {
-            this.message = '';
-
-            const fullName = this.form.fullName.trim();
-            const username = this.form.username.trim().toLowerCase();
-            const password = this.form.password;
-
-            if (!fullName || !username || !password) {
-                this.message = 'All fields are required.';
-                return;
-            }
-
-            const exists = this.users.some(
-                (user) => user.username.toLowerCase() === username
-            );
-
-            if (exists) {
-                this.message = 'Username already exists.';
-                return;
-            }
-
-            const newUser = {
-                id: Date.now(),
-                fullName,
-                username,
-                password,
-                role: this.form.role,
-                status: 'active'
-            };
-
-            this.users = [...this.users, newUser];
-            saveManagedUsers(this.users);
-
-            this.form = {
-                fullName: '',
-                username: '',
-                password: '',
-                role: 'user'
-            };
-
-            this.message = 'User created successfully.';
-        },
-        deleteUser(userId) {
-            this.users = this.users.filter((user) => user.id !== userId);
-            saveManagedUsers(this.users);
         }
     },
     mounted() {

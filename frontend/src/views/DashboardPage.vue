@@ -1,4 +1,4 @@
-    <template>
+<template>
     <div class="dashboard-container">
         <sidebar :is-open="sidebarOpen" @toggle="sidebarOpen = !sidebarOpen"></sidebar>
 
@@ -93,7 +93,7 @@
 <script>
 import AppHeader from '../components/AppHeader.vue';
 import Sidebar from '../components/Sidebar.vue';
-import api from '../../../backend/resources/js/services/api.js';
+import api from '../services/api.js';
 import { getStoredUser } from '../utils/auth';
 
 export default {

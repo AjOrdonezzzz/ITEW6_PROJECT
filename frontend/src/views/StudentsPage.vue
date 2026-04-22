@@ -25,7 +25,6 @@
                         </button>
                     </div>
                 </div>
-
                 <section v-if="showAddForm" class="student-form-card">
                     <div class="form-grid">
                         <div class="field">
@@ -139,23 +138,36 @@
                     </div>
                 </section>
 
-                <!-- ✅ Skill Filter Bar -->
-                <div v-if="allSkills.length" class="skill-filter-bar">
-                    <span class="filter-label">Filter by skill:</span>
-                    <div class="skill-filter-pills">
-                        <button
-                            v-for="skill in allSkills"
-                            :key="skill"
-                            :class="['skill-filter-btn', { active: skillFilter === skill }]"
-                            @click="setSkillFilter(skill)"
-                        >
-                            {{ skill }}
-                        </button>
-                        <button v-if="skillFilter" class="skill-filter-clear" @click="clearFilters">
-                            ✕ Clear
-                        </button>
-                    </div>
+ <div v-if="allSkills.length" class="skill-filter-container">
+        <div class="skill-filter-search">
+            <span class="filter-label">Filter by skill:</span>
+            <div class="skill-search-input-wrapper">
+                <input
+                    v-model="skillSearchInput"
+                    type="text"
+                    placeholder="Search or select a skill..."
+                    class="skill-search-input"
+                />
+                <div v-if="skillSearchInput && filteredSkillList.length" class="skill-dropdown">
+                    <button
+                        v-for="skill in filteredSkillList"
+                        :key="skill"
+                        class="skill-dropdown-item"
+                        @click="setSkillFilter(skill)"
+                    >
+                        {{ skill }}
+                    </button>
                 </div>
+            </div>
+        </div>
+
+        <div v-if="skillFilter" class="active-skill-filter">
+            <span class="active-skill-badge">
+                {{ skillFilter }}
+                <button class="remove-skill-btn" @click="clearFilters">×</button>
+            </span>
+        </div>
+    </div>
 
                 <div v-if="loading" class="empty-state">Loading students...</div>
 
@@ -313,13 +325,13 @@
 <script>
 import AppHeader from '../components/AppHeader.vue';
 import Sidebar from '../components/Sidebar.vue';
-import api from '../../../backend/resources/js/services/api.js';
+import api from '../services/api.js';
 
 export default {
     name: 'StudentsPage',
     components: { AppHeader, Sidebar },
 
-    data() {
+     data() {
         return {
             sidebarOpen: true,
             currentDate: '',
@@ -328,9 +340,10 @@ export default {
             editMessage: '',
             selectedStudent: null,
             searchQuery: '',
-            skillFilter: null,
+            skillFilter: '',
+            skillSearchInput: '',
             loading: false,
-            viewMode: 'cards', // 'cards' or 'table'
+            viewMode: 'cards',
             currentPage: 1,
             itemsPerPage: 10,
             remoteTotalPages: 1,
@@ -359,13 +372,21 @@ export default {
             return [...skillSet].sort();
         },
 
+        filteredSkillList() {
+            const query = this.skillSearchInput.trim().toLowerCase();
+            if (!query) return this.allSkills;
+            return this.allSkills.filter((skill) =>
+                skill.toLowerCase().includes(query)
+            );
+        },
+
         filteredStudents() {
             let list = this.students;
 
             if (this.skillFilter) {
                 const filter = this.skillFilter.toLowerCase();
                 list = list.filter((s) =>
-                    s.skills.some((sk) => sk.toLowerCase().includes(filter))
+                    s.skills.some((sk) => sk.toLowerCase() === filter)
                 );
             }
 
@@ -397,7 +418,6 @@ export default {
         },
 
         totalPages() {
-            // Prefer remote pagination info, else fallback to local calculation
             return this.remoteTotalPages > 0
                 ? this.remoteTotalPages
                 : Math.ceil(this.filteredStudents.length / this.itemsPerPage);
@@ -436,11 +456,15 @@ export default {
         },
 
         setSkillFilter(skill) {
-            this.skillFilter = this.skillFilter === skill ? null : skill;
+            this.skillFilter = skill;
+            this.skillSearchInput = '';
+            this.currentPage = 1;
         },
+
 
         clearFilters() {
             this.skillFilter = null;
+            this.skillSearchInput = '';
             this.searchQuery = '';
             this.currentPage = 1;
         },
@@ -667,6 +691,7 @@ export default {
             this.fetchStudents();
         }
     },
+
 
     mounted() {
         this.currentDate = this.getFormattedDate();

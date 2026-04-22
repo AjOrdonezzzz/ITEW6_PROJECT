@@ -12,36 +12,37 @@ class StudentController extends Controller
     // GET /api/v1/students
     public function index(Request $request): JsonResponse
     {
+        $query = Student::with([
+            'section',
+            'guardian',
+            'skills',  // ← Add this to load skills
+            'violations'
+        ]);
+
+        // Handle search query
+        if ($request->has('q')) {
+            $search = $request->input('q');
+            $query->where(function ($q) use ($search) {
+                $q->where('first_name', 'like', "%{$search}%")
+                  ->orWhere('last_name', 'like', "%{$search}%")
+                  ->orWhere('student_number', 'like', "%{$search}%");
+            });
+        }
+
+        // Handle skill filter
+        if ($request->has('skill')) {
+            $skill = $request->input('skill');
+            $query->whereHas('skills', function ($q) use ($skill) {
+                $q->where('skill_name', 'like', "%{$skill}%");
+            });
+        }
+
         $perPage = $request->query('limit');
-        $search = trim((string) $request->query('q', ''));
-        $skill = trim((string) $request->query('skill', ''));
-
-        $query = Student::with(['section', 'guardian', 'skills.skill']);
-
-        if ($search !== '') {
-            $query->where(function ($builder) use ($search) {
-                $builder
-                    ->where('first_name', 'like', "%{$search}%")
-                    ->orWhere('last_name', 'like', "%{$search}%")
-                    ->orWhere('middle_name', 'like', "%{$search}%")
-                    ->orWhere('student_number', 'like', "%{$search}%")
-                    ->orWhere('status', 'like', "%{$search}%")
-                    ->orWhereHas('section', function ($sectionQuery) use ($search) {
-                        $sectionQuery->where('section_name', 'like', "%{$search}%");
-                    });
-            });
-        }
-
-        if ($skill !== '') {
-            $query->whereHas('skills.skill', function ($skillQuery) use ($skill) {
-                $skillQuery->where('skill_name', 'like', "%{$skill}%");
-            });
-        }
+        $page = $request->query('page', 1);
 
         $query->latest('student_id');
 
         if ($perPage) {
-            $page = $request->query('page', 1);
             $students = $query->paginate(intval($perPage), ['*'], 'page', intval($page));
             return response()->json($students);
         }

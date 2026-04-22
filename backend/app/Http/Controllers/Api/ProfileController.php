@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Models\User;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -13,6 +14,33 @@ class ProfileController extends Controller
     /**
      * Get the authenticated user's profile.
      */
+        public function index()
+    {
+        // Returns all users from your sqlite database
+        return response()->json(User::all());
+    }
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'name'     => 'required|string|max:255',
+            'username' => 'required|string|unique:users,username',
+            'email'    => 'required|email|unique:users,email',
+            'password' => 'required|string|min:8',
+            'role'     => 'required|in:admin,user',
+        ]);
+
+        $user = User::create([
+            'name'     => $validated['name'],
+            'username' => $validated['username'],
+            'email'    => $validated['email'],
+            'password' => bcrypt($validated['password']),
+            'role'     => $validated['role'],
+        ]);
+
+        return response()->json($user, 201);
+    }
+
     public function show()
     {
         // returns the currently logged-in user (from the Sanctum token)
