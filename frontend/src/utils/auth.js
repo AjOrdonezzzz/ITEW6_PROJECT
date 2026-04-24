@@ -12,6 +12,10 @@ export function getStoredUser() {
     }
 }
 
+// utils/auth.js — add this if not already there
+export function getUser() {
+    return JSON.parse(localStorage.getItem('user') || 'null');
+}
 /**
  * Get the API token for Axios headers
  */
