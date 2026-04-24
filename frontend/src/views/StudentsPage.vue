@@ -626,7 +626,7 @@ export default {
     border-radius: 16px;
     padding: 24px;
     margin-bottom: 24px;
-    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12);
+    border: 2px solid rgba(255, 255, 255, 0.2);
 }
 
 .form-grid {
@@ -1002,7 +1002,7 @@ export default {
     background: white;
     border-radius: 16px;
     padding: 20px;
-    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12);
+     border: 2px solid rgba(255, 255, 255, 0.2);
     cursor: pointer;
     transition: transform 0.2s, box-shadow 0.2s;
 }
