@@ -5,9 +5,9 @@ const state = reactive({
     user: getStoredUser()
 });
 
-function setUser(user) {
+function setUser(user, token = null) {
     state.user = user;
-    setStoredUser(user);
+    setStoredUser(user, token);
 }
 
 function clearUserState() {

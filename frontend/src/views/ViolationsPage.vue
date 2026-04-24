@@ -188,7 +188,7 @@
 <script>
 import AppHeader from '../components/AppHeader.vue';
 import Sidebar from '../components/Sidebar.vue';
-import api from '../../../backend/resources/js/services/api.js';
+import api from '../services/api.js';
 
 export default {
     name: 'ViolationsPage',

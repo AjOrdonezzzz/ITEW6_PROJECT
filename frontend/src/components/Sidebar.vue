@@ -35,6 +35,27 @@
                         <path d="M19 19a3 3 0 0 0-3-3" />
                         <circle cx="18" cy="10" r="2" />
                     </svg>
+                    <svg v-else-if="item.icon === 'rooms'" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M4 20V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v14" />
+                        <path d="M4 20h16" />
+                        <path d="M9 4v16" />
+                        <path d="M13 8h2M13 12h2" />
+                    </svg>
+                    <svg v-else-if="item.icon === 'courses'" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M4 6.5A2.5 2.5 0 0 1 6.5 4H20v15.5a.5.5 0 0 1-.8.4l-2.7-2-2.7 2-2.7-2-2.7 2-.6-.5V6.5A2.5 2.5 0 0 0 4 4" />
+                        <path d="M8 8h8M8 12h8" />
+                    </svg>
+                    <svg v-else-if="item.icon === 'faculty'" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M18 20a5 5 0 0 0-10 0" />
+                        <circle cx="13" cy="8" r="4" />
+                        <path d="M2 20a4 4 0 0 1 4-4" />
+                        <circle cx="5" cy="9" r="2.5" />
+                    </svg>
+                    <svg v-else-if="item.icon === 'sections'" viewBox="0 0 24 24" aria-hidden="true">
+                        <rect x="3" y="4" width="18" height="16" rx="3" />
+                        <path d="M3 10h18" />
+                        <path d="M9 10v10" />
+                    </svg>
                     <svg v-else-if="item.icon === 'violations'" viewBox="0 0 24 24" aria-hidden="true">
                         <path d="M12 4 3 20h18L12 4Z" />
                         <path d="M12 9v5" />
@@ -92,11 +113,15 @@ export default {
             menuItems: [
                 { id: 1, label: 'Dashboard', icon: 'dashboard', route: '/dashboard' },
                 { id: 2, label: 'Students', icon: 'students', route: '/students' },
-                { id: 3, label: 'Violations', icon: 'violations', route: '/violations' },
-                { id: 4, label: 'Events', icon: 'events', route: '/events' },
-                { id: 5, label: 'Reports', icon: 'reports', route: '/reports', adminOnly: true },
-                { id: 6, label: 'Users', icon: 'students', route: '/users', adminOnly: true },
-                { id: 7, label: 'Settings', icon: 'settings', route: '/settings' }
+                { id: 3, label: 'Faculty', icon: 'faculty', route: '/faculty', adminOnly: true },
+                { id: 4, label: 'Courses', icon: 'courses', route: '/courses' },
+                { id: 5, label: 'Sections', icon: 'sections', route: '/sections' },
+                { id: 6, label: 'Rooms', icon: 'rooms', route: '/rooms' },
+                { id: 7, label: 'Violations', icon: 'violations', route: '/violations' },
+                { id: 8, label: 'Events', icon: 'events', route: '/events' },
+                { id: 9, label: 'Reports', icon: 'reports', route: '/reports', adminOnly: true },
+                { id: 10, label: 'Users', icon: 'students', route: '/users', adminOnly: true },
+                { id: 11, label: 'Settings', icon: 'settings', route: '/settings' }
             ]
         };
     },

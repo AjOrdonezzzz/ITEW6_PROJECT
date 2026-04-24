@@ -24,6 +24,7 @@ use App\Http\Controllers\Api\FacultySubjectController;
 use App\Http\Controllers\Api\FacultyOrganizationController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\ProfileController;
+use App\Http\Controllers\Api\RoomController;
 
 Route::get('/test', function () {
     return response()->json(['message' => 'Hello from API!']);
@@ -46,10 +47,21 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
     Route::get('students/{id}/skills',     [StudentController::class, 'skills']);
     Route::get('students/{id}/awards',     [StudentController::class, 'awards']);
 
-    Route::apiResource('faculty', FacultyController::class);
-    Route::apiResource('departments', DepartmentController::class);
-    Route::apiResource('sections', SectionController::class);
-    Route::apiResource('subjects', SubjectController::class);
+    Route::get('faculty', [FacultyController::class, 'index']);
+    Route::get('faculty/{faculty}', [FacultyController::class, 'show']);
+
+    Route::get('departments', [DepartmentController::class, 'index']);
+    Route::get('departments/{department}', [DepartmentController::class, 'show']);
+
+    Route::get('sections', [SectionController::class, 'index']);
+    Route::get('sections/{section}', [SectionController::class, 'show']);
+
+    Route::get('rooms', [RoomController::class, 'index']);
+    Route::get('rooms/{room}', [RoomController::class, 'show']);
+    Route::get('rooms/{id}/sections', [RoomController::class, 'sections']);
+
+    Route::get('subjects', [SubjectController::class, 'index']);
+    Route::get('subjects/{subject}', [SubjectController::class, 'show']);
     
 
     Route::apiResource('guardians', GuardianController::class);
@@ -71,9 +83,37 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
     
     Route::get('/user-profile', [ProfileController::class, 'show']);
     Route::put('/user-profile/update', [ProfileController::class, 'update']);
-    Route::get('/users', [ProfileController::class, 'index']);      // List all users
-    Route::post('/users', [ProfileController::class, 'store']);    // Create new user
-    Route::delete('/users/{id}', [ProfileController::class, 'destroy']); // Delete user
 
     Route::post('/logout', [LoginController::class, 'logout']);
+});
+
+Route::middleware(['auth:sanctum', 'admin'])->prefix('v1')->group(function () {
+    Route::post('faculty', [FacultyController::class, 'store']);
+    Route::put('faculty/{faculty}', [FacultyController::class, 'update']);
+    Route::patch('faculty/{faculty}', [FacultyController::class, 'update']);
+    Route::delete('faculty/{faculty}', [FacultyController::class, 'destroy']);
+
+    Route::post('departments', [DepartmentController::class, 'store']);
+    Route::put('departments/{department}', [DepartmentController::class, 'update']);
+    Route::patch('departments/{department}', [DepartmentController::class, 'update']);
+    Route::delete('departments/{department}', [DepartmentController::class, 'destroy']);
+
+    Route::post('sections', [SectionController::class, 'store']);
+    Route::put('sections/{section}', [SectionController::class, 'update']);
+    Route::patch('sections/{section}', [SectionController::class, 'update']);
+    Route::delete('sections/{section}', [SectionController::class, 'destroy']);
+
+    Route::post('rooms', [RoomController::class, 'store']);
+    Route::put('rooms/{room}', [RoomController::class, 'update']);
+    Route::patch('rooms/{room}', [RoomController::class, 'update']);
+    Route::delete('rooms/{room}', [RoomController::class, 'destroy']);
+
+    Route::post('subjects', [SubjectController::class, 'store']);
+    Route::put('subjects/{subject}', [SubjectController::class, 'update']);
+    Route::patch('subjects/{subject}', [SubjectController::class, 'update']);
+    Route::delete('subjects/{subject}', [SubjectController::class, 'destroy']);
+
+    Route::get('/users', [ProfileController::class, 'index']);
+    Route::post('/users', [ProfileController::class, 'store']);
+    Route::delete('/users/{id}', [ProfileController::class, 'destroy']);
 });

@@ -72,6 +72,7 @@
 <script>
 import globalState from '../store/globalState';
 import axios from 'axios';
+import { setStoredUser } from '../utils/auth';
 
 export default {
     name: 'LoginPage',
@@ -133,10 +134,9 @@ export default {
                     show: true
                 };
 
-                // 3. Save to localStorage for the Navigation Guard
-                localStorage.setItem('user_token', token);
-                localStorage.setItem('user_role', user.role);
-                localStorage.setItem('user', JSON.stringify(user));
+                // 3. Save to central auth storage for the Navigation Guard
+                setStoredUser(user, token);
+                globalState.setUser(user, token);
 
                 // 4. Redirect
                 setTimeout(() => {

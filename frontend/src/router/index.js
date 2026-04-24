@@ -1,10 +1,15 @@
 import { createRouter, createWebHistory } from 'vue-router';
+import { getStoredUser, isAdminUser, isAuthenticated } from '../utils/auth';
 
 // 1. Import your pages
 import TestPage from '../views/TestPage.vue';
 import LoginPage from '../views/LoginPage.vue';
 import DashboardPage from '../views/DashboardPage.vue';
 import StudentsPage from '../views/StudentsPage.vue';
+import CoursesPage from '../views/CoursesPage.vue';
+import FacultyPage from '../views/FacultyPage.vue';
+import RoomsPage from '../views/RoomsPage.vue';
+import SectionsPage from '../views/SectionsPage.vue';
 import ViolationsPage from '../views/ViolationsPage.vue';
 import EventsPage from '../views/EventsPage.vue';
 import ReportsPage from '../views/ReportsPage.vue';
@@ -18,6 +23,10 @@ const routes = [
     { path: '/', name: 'Login', component: LoginPage },
     { path: '/dashboard', name: 'Dashboard', component: DashboardPage, meta: { requiresAuth: true } },
     { path: '/students', name: 'Students', component: StudentsPage, meta: { requiresAuth: true } },
+    { path: '/faculty', name: 'Faculty', component: FacultyPage, meta: { requiresAuth: true, requiresAdmin: true } },
+    { path: '/courses', name: 'Courses', component: CoursesPage, meta: { requiresAuth: true } },
+    { path: '/sections', name: 'Sections', component: SectionsPage, meta: { requiresAuth: true } },
+    { path: '/rooms', name: 'Rooms', component: RoomsPage, meta: { requiresAuth: true } },
     { path: '/violations', name: 'Violations', component: ViolationsPage, meta: { requiresAuth: true } },
     { path: '/events', name: 'Events', component: EventsPage, meta: { requiresAuth: true } },
     { path: '/reports', name: 'Reports', component: ReportsPage, meta: { requiresAuth: true, requiresAdmin: true } },
@@ -33,13 +42,14 @@ const router = createRouter({
 
 // 3. Navigation Guard (Corrected version)
 router.beforeEach((to, from) => {
-    const isAuthenticated = !!localStorage.getItem('user_token');
-    const isAdmin = localStorage.getItem('user_role') === 'admin';
+    const authenticated = isAuthenticated();
+    const storedUser = getStoredUser();
+    const isAdmin = isAdminUser(storedUser);
 
-    if (to.meta.requiresAuth && !isAuthenticated) {
+    if (to.meta.requiresAuth && !authenticated) {
         return { name: 'Login' };
     }
-    if (to.name === 'Login' && isAuthenticated) {
+    if (to.name === 'Login' && authenticated) {
         return { name: 'Dashboard' };
     }
     if (to.meta.requiresAdmin && !isAdmin) {
