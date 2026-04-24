@@ -6,8 +6,10 @@ use App\Models\Guardian;
 use App\Models\Section;
 use App\Models\Student;
 use App\Models\StudentViolation;
+use App\Models\User;
 use App\Models\ViolationType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class NotificationApiTest extends TestCase
@@ -16,6 +18,8 @@ class NotificationApiTest extends TestCase
 
     public function test_it_returns_recent_notifications_from_students_and_violations(): void
     {
+        Sanctum::actingAs(User::factory()->create());
+
         $guardian = Guardian::create([
             'first_name' => 'Maria',
             'last_name' => 'Santos',

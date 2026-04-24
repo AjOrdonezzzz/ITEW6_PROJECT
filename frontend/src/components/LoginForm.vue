@@ -62,6 +62,8 @@
 
 <script>
 import axios from 'axios';
+import globalState from '../store/globalState';
+import { setStoredUser } from '../utils/auth';
 export default {
     name: 'LoginForm',
     data() {
@@ -132,11 +134,9 @@ export default {
                 password: this.form.password
             });
 
-            // 2. If successful, save the token and user info
-            // We use the keys your Navigation Guard is looking for:
-            localStorage.setItem('user_token', response.data.token);
-            localStorage.setItem('user_role', response.data.user.role); // e.g., 'admin' or 'user'
-            localStorage.setItem('user', JSON.stringify(response.data.user));
+            // 2. Save token and user info through shared auth helpers
+            setStoredUser(response.data.user, response.data.token);
+            globalState.setUser(response.data.user, response.data.token);
 
             this.message = {
                 text: `Welcome back, ${response.data.user.username}! 🎉`,

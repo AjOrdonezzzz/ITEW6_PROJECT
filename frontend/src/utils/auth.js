@@ -24,6 +24,7 @@ export function getStoredToken() {
  */
 export function setStoredUser(user, token) {
     localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+    localStorage.setItem('user_role', user?.role || '');
     if (token) {
         localStorage.setItem(TOKEN_STORAGE_KEY, token);
     }
@@ -35,6 +36,7 @@ export function setStoredUser(user, token) {
 export function clearStoredUser() {
     localStorage.removeItem(USER_STORAGE_KEY);
     localStorage.removeItem(TOKEN_STORAGE_KEY);
+    localStorage.removeItem('user_role');
 }
 
 /**

@@ -11,7 +11,13 @@ class FacultyController extends Controller
 {
     public function index(): JsonResponse
     {
-        return response()->json(Faculty::with('department')->get());
+        return response()->json(
+            Faculty::with('department')
+                ->withCount(['sections', 'subjects', 'organizations'])
+                ->orderBy('last_name')
+                ->orderBy('first_name')
+                ->get()
+        );
     }
 
     public function store(Request $request): JsonResponse
@@ -27,13 +33,14 @@ class FacultyController extends Controller
         ]);
 
         $faculty = Faculty::create($validated);
-        return response()->json($faculty->load('department'), 201);
+        return response()->json($faculty->load('department')->loadCount(['sections', 'subjects', 'organizations']), 201);
     }
 
     public function show(int $id): JsonResponse
     {
         return response()->json(
             Faculty::with(['department', 'sections', 'subjects.subject', 'organizations.organization'])
+                ->withCount(['sections', 'subjects', 'organizations'])
                 ->findOrFail($id)
         );
     }
@@ -53,7 +60,7 @@ class FacultyController extends Controller
         ]);
 
         $faculty->update($validated);
-        return response()->json($faculty->load('department'));
+        return response()->json($faculty->load('department')->loadCount(['sections', 'subjects', 'organizations']));
     }
 
     public function destroy(int $id): JsonResponse

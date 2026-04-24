@@ -22,6 +22,7 @@ use App\Models\NonAcademicActivity;
 use App\Models\FacultySubject;
 use App\Models\FacultyOrganization;
 use App\Models\User;
+use App\Models\Room;
 
 class DatabaseSeeder extends Seeder
 {
@@ -48,6 +49,7 @@ class DatabaseSeeder extends Seeder
         );
 
         Department::factory(3)->create();
+        Room::factory(15)->create();
         Guardian::factory(20)->create();
 
         $faculty = Faculty::factory(10)->create();

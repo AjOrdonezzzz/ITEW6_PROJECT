@@ -9,7 +9,9 @@ use App\Models\Section;
 use App\Models\Skill;
 use App\Models\Student;
 use App\Models\StudentSkill;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class StudentIndexTest extends TestCase
@@ -18,6 +20,8 @@ class StudentIndexTest extends TestCase
 
     public function test_it_supports_search_and_skill_filter_in_student_listing(): void
     {
+        Sanctum::actingAs(User::factory()->create());
+
         $department = Department::create([
             'department_name' => 'College of Computing Studies',
         ]);
